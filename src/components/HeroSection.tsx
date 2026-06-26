@@ -8,10 +8,9 @@ interface Props {
   label: string
   title: string
   subtitle: string
-  objectPosition?: string
 }
 
-export default function HeroSection({ heroUrl, label, title, subtitle, objectPosition = 'center top' }: Props) {
+export default function HeroSection({ heroUrl, label, title, subtitle }: Props) {
   return (
     <section className="relative h-screen w-full overflow-hidden">
       <motion.div
@@ -24,7 +23,6 @@ export default function HeroSection({ heroUrl, label, title, subtitle, objectPos
           src={heroUrl}
           alt="Ensaio Gestante"
           className="w-full h-full object-cover"
-          style={{ objectPosition }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/60" />
       </motion.div>

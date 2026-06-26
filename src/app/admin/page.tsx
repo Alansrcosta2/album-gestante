@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { compressImage } from '@/lib/compress-image'
-import { Lock, Upload, Trash2, X, Image as ImageIcon, GripVertical, Settings, LogOut, Plus, Music } from 'lucide-react'
+import { Lock, Upload, Trash2, X, Image as ImageIcon, GripVertical, Settings, LogOut, Plus, Music, Star } from 'lucide-react'
 
 function Field({ label, value, onChange, onSave, textarea, placeholder }: { label: string; value: string; onChange: (v: string) => void; onSave: (v: string) => void; textarea?: boolean; placeholder?: string }) {
   return (
@@ -76,6 +76,18 @@ export default function AdminPage() {
     const text = updated.join('\n')
     setSettings((p) => ({ ...p, background_music_url: text }))
     await saveSetting('background_music_url', text)
+  }
+
+  async function setAsHero(foto: Foto) {
+    const currentHero = fotos.find((f) => f.ordem === 1)
+    if (currentHero && currentHero.id === foto.id) return
+
+    const oldOrdem = foto.ordem
+
+    if (currentHero) {
+      await handleEdit(currentHero, 'ordem', oldOrdem)
+    }
+    await handleEdit(foto, 'ordem', 1)
   }
 
   async function saveSetting(key: string, value: string) {
@@ -397,6 +409,18 @@ export default function AdminPage() {
                   </div>
 
                   <div className="flex items-center gap-1 md:gap-2 shrink-0">
+                    <button
+                      onClick={() => setAsHero(foto)}
+                      className={`w-7 h-7 md:w-8 md:h-8 rounded-md md:rounded-lg flex items-center justify-center transition-colors ${
+                        foto.ordem === 1
+                          ? 'bg-gold/20 text-gold'
+                          : 'bg-beige/50 text-dark/40 hover:bg-gold/10 hover:text-gold'
+                      }`}
+                      aria-label="Tornar Hero"
+                      title={foto.ordem === 1 ? 'É a foto do Hero' : 'Tornar Hero'}
+                    >
+                      <Star className={`w-3.5 h-3.5 md:w-4 md:h-4 ${foto.ordem === 1 ? 'fill-current' : ''}`} />
+                    </button>
                     <input
                       type="number"
                       defaultValue={foto.ordem}
