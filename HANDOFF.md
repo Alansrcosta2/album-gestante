@@ -1,6 +1,6 @@
 # Álbum Gestante — Karine & Alan
 
-## Estado atual do projeto (26/06/2026 — finalizado)
+## Estado atual do projeto (26/06/2026)
 
 ### Stack
 - **Framework**: Next.js 14 + React + TypeScript
@@ -17,41 +17,39 @@ album-gestante/
 │   ├── app/
 │   │   ├── globals.css
 │   │   ├── layout.tsx
-│   │   ├── page.tsx
+│   │   ├── page.tsx                      # Página pública do álbum
 │   │   ├── api/
 │   │   │   ├── auth/
-│   │   │   │   ├── route.ts          # Login do álbum (senha do álbum)
-│   │   │   │   └── check/route.ts    # Checa sessão ao recarregar
+│   │   │   │   ├── route.ts              # Login do álbum (senha do álbum)
+│   │   │   │   ├── check/route.ts        # Checa sessão ao recarregar
+│   │   │   │   └── logout/route.ts       # Logout do álbum
 │   │   │   ├── admin/
-│   │   │   │   ├── auth/route.ts     # Login admin (senha admin)
-│   │   │   │   ├── fotos/route.ts    # CRUD fotos (upload/compress/delete/reorder)
-│   │   │   │   └── settings/route.ts # CRUD settings (protegido por admin)
-│   │   │   ├── fotos/route.ts        # Lista fotos + signed URLs (protegido por álbum)
-│   │   │   └── settings/route.ts     # Lê settings públicos (protegido por sessão álbum)
-│   │   ├── admin/page.tsx            # Painel admin completo
-│   ├── components/
-│   │   ├── BackgroundMusic.tsx       # Player YouTube (configurável via admin)
-│   │   ├── PasswordGate.tsx          # Tela de senha do álbum
-│   │   ├── HeroSection.tsx           # Hero com foto, título, subtítulo, label
-│   │   ├── WelcomeMessage.tsx        # Mensagem de boas-vindas
-│   │   ├── Highlights.tsx            # Slideshow de destaques (object-contain)
-│   │   ├── Gallery.tsx               # Grid responsivo (object-contain)
-│   │   ├── PhotoModal.tsx            # Modal com swipe, download, navegação
-│   │   └── Footer.tsx                # Footer com título/subtítulo configuráveis
-│   └── lib/
-│       ├── compress-image.ts         # Compressão client-side (2000px, JPEG 85%)
-│       ├── supabase-admin.ts         # Cliente Supabase com service_role
-│       └── supabase.ts               # Cliente Supabase (anon key)
-├── scripts/
-│   ├── upload_fotos.py
-│   └── requirements.txt
-├── supabase/
-│   └── schema.sql
-├── .env.local
-├── .env.local.example
-├── .env.vercel
-├── HANDOFF.md
-└── ...
+│   │   │   │   ├── auth/
+│   │   │   │   │   ├── route.ts          # Login admin (senha admin)
+│   │   │   │   │   └── logout/route.ts   # Logout do admin
+│   │   │   │   ├── fotos/route.ts        # CRUD fotos (upload/compress/delete/reorder)
+│   │   │   │   └── settings/route.ts     # CRUD settings (protegido por admin)
+│   │   │   ├── fotos/route.ts            # Lista fotos + signed URLs (protegido por álbum)
+│   │   │   └── settings/route.ts         # Lê settings públicos (protegido por sessão álbum)
+│   │   ├── admin/page.tsx                # Painel admin completo
+│   │   ├── components/
+│   │   │   ├── BackgroundMusic.tsx       # Player YouTube com playlist (configurável via admin)
+│   │   │   ├── PasswordGate.tsx          # Tela de senha do álbum (com botão logout)
+│   │   │   ├── HeroSection.tsx           # Hero com foto, título, subtítulo, label
+│   │   │   ├── WelcomeMessage.tsx        # Mensagem de boas-vindas
+│   │   │   ├── Highlights.tsx            # Slideshow de destaques (object-contain)
+│   │   │   ├── Gallery.tsx               # Grid responsivo (object-contain)
+│   │   │   ├── PhotoModal.tsx            # Modal com swipe, download, navegação
+│   │   │   └── Footer.tsx                # Footer com título/subtítulo configuráveis
+│   │   └── lib/
+│   │       ├── compress-image.ts         # Compressão client-side (2000px, JPEG 85%)
+│   │       ├── supabase-admin.ts         # Cliente Supabase com service_role
+│   │       └── supabase.ts               # Cliente Supabase (anon key)
+│   ├── scripts/
+│   │   ├── upload_fotos.py
+│   │   └── requirements.txt
+│   └── supabase/
+│       └── schema.sql
 ```
 
 ### Status
@@ -61,7 +59,7 @@ album-gestante/
 | Fotos processadas (sem marca d'água) | ✅ 217 fotos |
 | Upload para Supabase Storage | ✅ 217 fotos |
 | Registro no banco (tabela `fotos`) | ✅ 217 registros |
-| Schema SQL + permissões | ✅ Atualizado (`GRANT SELECT ON fotos TO anon`) |
+| Schema SQL + permissões | ✅ Atualizado |
 | Git init + GitHub | ✅ `Alansrcosta2/album-gestante` (público) |
 | Build local (`npm run build`) | ✅ Funcionando |
 | Deploy Vercel | ✅ **Em produção** |
@@ -70,7 +68,9 @@ album-gestante/
 | Controle total de conteúdo via admin | ✅ Implementado |
 | Sessão persiste ao recarregar | ✅ Implementado |
 | Otimizações mobile (swipe, touch-action, object-contain) | ✅ Implementado |
-| Player de música (YouTube) | ✅ Componente pronto, URL configurável via admin |
+| Player de música (YouTube) com playlist | ✅ Configurável via admin |
+| Logout em ambas as telas | ✅ Implementado |
+| Admin responsivo (mobile otimizado) | ✅ Implementado |
 
 ### Configurações
 
@@ -82,24 +82,42 @@ album-gestante/
 | **Bucket** | `fotos_gestante` (privado, signed URLs 1h) |
 | **GitHub** | `https://github.com/Alansrcosta2/album-gestante` (público) |
 | **Vercel Production URL** | `https://album-gestante.vercel.app` |
-| **Tabela `settings`** | Chaves: `hero_label`, `hero_title`, `hero_subtitle`, `welcome_message`, `footer_title`, `footer_subtitle` |
-| **Música** | Player YouTube pronto — coloque a URL no admin |
+| **Tabela `settings`** | Chaves: `hero_label`, `hero_title`, `hero_subtitle`, `welcome_message`, `footer_title`, `footer_subtitle`, `background_music_url` |
+
+### Acessos
+
+| Página | URL | Senha |
+|--------|-----|-------|
+| **Álbum (público)** | https://album-gestante.vercel.app | `karinegestante2026` |
+| **Admin** | https://album-gestante.vercel.app/admin | `karine2026` |
 
 ### Próximos passos (somente configuração final)
 
 1. **Vercel → Settings → Deployment Protection → Disabled** (senão pede login da Vercel)
 2. No **Admin (`/admin`)** com senha `karine2026`:
-   - Adicionar URL do YouTube da música (campo "Música de fundo")
+   - Adicionar URLs do YouTube das músicas (campo "Música de fundo") — separar por vírgula ou Enter para múltiplas
    - Ajustar textos (Hero, Welcome, Footer) se quiser
    - Reordenar fotos se quiser mudar a foto do Hero (a de `ordem=1`)
 3. Testar no celular e desktop
 
-### Credenciais de acesso
+### Funcionalidades do Admin
 
-| Acesso | Senha |
-|--------|-------|
-| Álbum (público) | `karinegestante2026` |
-| Admin (`/admin`) | `karine2026` |
+- **Upload de fotos**: clique ou arraste, compressão automática (JPEG 2000px, 85%)
+- **Edição inline**: título e ordem diretamente na lista
+- **Exclusão**: botão de lixeira com confirmação
+- **Configurações**: todos os textos editáveis + música de fundo
+- **Playlist de música**: múltiplas URLs, botões de avançar/voltar, contador
+- **Logout**: botão no header (desktop) ou X (mobile)
+
+### Funcionalidades do Álbum
+
+- **Tela de senha** com botão de logout (X no canto superior direito)
+- **Hero** com a primeira foto da galeria (ordem=1)
+- **Highlights**: slideshow automático das primeiras 18 fotos
+- **Galeria completa**: grid responsivo com lazy loading e infinite scroll (24 por página)
+- **Modal de foto**: swipe, download, navegação por teclado (← → Esc)
+- **Player de música**: botão play/pause, skip anterior/próximo, contador
+- **Footer** configurável
 
 ### Variáveis de ambiente (já configuradas na Vercel)
 
@@ -113,10 +131,11 @@ album-gestante/
 
 ### Observações importantes
 
-- **Repo público** no GitHub (necessário para deploy grátis na Vercel Hobby com repo privado)
+- **Repo público** no GitHub (necessário para deploy grátis na Vercel Hobby)
 - **Bucket privado** no Supabase — acesso só via signed URLs (expiram em 1h)
 - **Service Role Key** usada apenas no server-side (API routes admin + `/api/fotos`)
-- **Sessão do álbum**: cookie HTTP-only `album_session` (24h), válido no `/api/auth/check`
+- **Sessão do álbum**: cookie HTTP-only `album_session` (24h)
 - **Admin**: cookie HTTP-only `admin_session` (24h), separado da sessão do álbum
 - **Foto do Hero** = primeira foto da galeria (`ordem=1`). Mude a ordem no admin pra trocar.
-- **Música**: o componente `BackgroundMusic` aceita URL do YouTube. Insira a URL no admin e salve.
+- **Música**: playlist de URLs do YouTube separadas por vírgula ou Enter. O player toca automaticamente na ordem.
+- **Logout**: disponível tanto no álbum (X no canto superior direito) quanto no admin (botão LogOut no header).
