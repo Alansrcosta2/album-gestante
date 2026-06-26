@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { compressImage } from '@/lib/compress-image'
-import { Lock, Upload, Trash2, Save, X, Image as ImageIcon, GripVertical } from 'lucide-react'
+import { Lock, Upload, Trash2, X, Image as ImageIcon, GripVertical, MessageSquare } from 'lucide-react'
 
 interface Foto {
   id: number
@@ -23,6 +23,8 @@ export default function AdminPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [preview, setPreview] = useState('')
   const [newTitulo, setNewTitulo] = useState('')
+  const [welcomeMessage, setWelcomeMessage] = useState('')
+  const [settingsSaved, setSettingsSaved] = useState(false)
 
   const fileRef = useRef<HTMLInputElement>(null)
   const dropRef = useRef<HTMLDivElement>(null)
@@ -30,7 +32,30 @@ export default function AdminPage() {
   useEffect(() => {
     if (!authed) return
     loadFotos()
+    loadSettings()
   }, [authed])
+
+  async function loadSettings() {
+    const res = await fetch('/api/admin/settings')
+    if (res.ok) {
+      const data = await res.json()
+      if (data.settings?.welcome_message) {
+        setWelcomeMessage(data.settings.welcome_message)
+      }
+    }
+  }
+
+  async function saveSettings() {
+    const res = await fetch('/api/admin/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: 'welcome_message', value: welcomeMessage }),
+    })
+    if (res.ok) {
+      setSettingsSaved(true)
+      setTimeout(() => setSettingsSaved(false), 2000)
+    }
+  }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -214,6 +239,24 @@ export default function AdminPage() {
               </div>
             </div>
           )}
+        </section>
+
+        <section className="bg-white rounded-2xl p-6 border border-beige">
+          <h2 className="font-serif text-lg text-dark mb-4 flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-gold" /> Mensagem de Boas-Vindas
+          </h2>
+          <textarea
+            value={welcomeMessage}
+            onChange={(e) => setWelcomeMessage(e.target.value)}
+            rows={4}
+            className="w-full px-4 py-3 rounded-xl border border-beige bg-white text-dark font-sans text-sm outline-none focus:border-gold transition-colors resize-none"
+          />
+          <button
+            onClick={saveSettings}
+            className="mt-3 px-6 py-2.5 rounded-xl bg-gradient-to-r from-gold to-rose text-white font-sans text-sm font-bold tracking-wider uppercase shadow-lg hover:opacity-90"
+          >
+            {settingsSaved ? 'Salvo!' : 'Salvar'}
+          </button>
         </section>
 
         <section>
