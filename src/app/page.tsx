@@ -21,6 +21,7 @@ interface Settings {
   footer_title?: string
   footer_subtitle?: string
   background_music_url?: string
+  hero_object_position?: string
 }
 
 const DEFAULTS: Settings = {
@@ -31,6 +32,7 @@ const DEFAULTS: Settings = {
   footer_title: 'Karine & Alan',
   footer_subtitle: 'Ensaio Gestante',
   background_music_url: '',
+  hero_object_position: 'center top',
 }
 
 export default function Home() {
@@ -77,7 +79,11 @@ export default function Home() {
       if (settingsRes.ok) {
         const data = await settingsRes.json()
         if (data.settings) {
-          setSettings({ ...DEFAULTS, ...data.settings })
+        const filtered: Record<string, string> = {}
+        for (const [key, value] of Object.entries(data.settings as Record<string, string>)) {
+          if (value && value.trim()) filtered[key] = value.trim()
+        }
+          setSettings({ ...DEFAULTS, ...filtered })
         }
       }
 

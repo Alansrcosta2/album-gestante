@@ -15,7 +15,19 @@ CREATE TABLE IF NOT EXISTS fotos (
 -- Index para ordenação
 CREATE INDEX IF NOT EXISTS idx_fotos_ordem ON fotos (ordem);
 
--- 2. ROW LEVEL SECURITY
+-- 2. TABELA DE SETTINGS
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL DEFAULT ''
+);
+
+-- Permissões para anon (leitura das settings públicas)
+GRANT SELECT ON settings TO anon;
+
+-- Permissões para service_role (admin pode editar)
+GRANT ALL PRIVILEGES ON settings TO service_role;
+
+-- 3. ROW LEVEL SECURITY
 ALTER TABLE fotos ENABLE ROW LEVEL SECURITY;
 
 -- Permitir leitura para usuários anônimos autenticados via anon key

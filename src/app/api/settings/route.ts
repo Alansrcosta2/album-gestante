@@ -11,7 +11,9 @@ export async function GET() {
   const supabase = getSupabaseAdmin()
   const { data, error } = await supabase.from('settings').select('key, value')
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    return NextResponse.json({ settings: {} })
+  }
 
   const settings: Record<string, string> = {}
   for (const row of data || []) settings[row.key] = row.value

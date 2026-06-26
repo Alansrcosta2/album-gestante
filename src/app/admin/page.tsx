@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { compressImage } from '@/lib/compress-image'
-import { Lock, Upload, Trash2, X, Image as ImageIcon, GripVertical, Settings, LogOut } from 'lucide-react'
+import { Lock, Upload, Trash2, X, Image as ImageIcon, GripVertical, Settings, LogOut, Plus, Music } from 'lucide-react'
 
 function Field({ label, value, onChange, onSave, textarea, placeholder }: { label: string; value: string; onChange: (v: string) => void; onSave: (v: string) => void; textarea?: boolean; placeholder?: string }) {
   return (
@@ -40,7 +40,7 @@ export default function AdminPage() {
     hero_label: 'Ensaio Gestante',
     hero_title: 'Karine & Alan',
     hero_subtitle: 'À espera do nosso maior presente.',
-    welcome_message: '',
+    welcome_message: 'Este não é apenas um ensaio fotográfico. É a lembrança de um capítulo inesquecível da nossa história, marcado pelo amor, pela esperança e pela alegria de esperar o maior presente que a vida poderia nos dar.',
     footer_title: 'Karine & Alan',
     footer_subtitle: 'Ensaio Gestante',
     background_music_url: '',
@@ -56,14 +56,26 @@ export default function AdminPage() {
     loadSettings()
   }, [authed])
 
-  async function loadSettings() {
-    const res = await fetch('/api/admin/settings')
-    if (res.ok) {
-      const data = await res.json()
-      if (data.settings) {
-        setSettings((prev) => ({ ...prev, ...data.settings }))
-      }
-    }
+  const [musicUrls, setMusicUrls] = useState<string[]>([])
+  const [newMusicUrl, setNewMusicUrl] = useState('')
+
+  async function addMusicUrl() {
+    const url = newMusicUrl.trim()
+    if (!url) return
+    const updated = [...musicUrls, url]
+    setMusicUrls(updated)
+    const text = updated.join('\n')
+    setSettings((p) => ({ ...p, background_music_url: text }))
+    await saveSetting('background_music_url', text)
+    setNewMusicUrl('')
+  }
+
+  async function removeMusicUrl(index: number) {
+    const updated = musicUrls.filter((_, i) => i !== index)
+    setMusicUrls(updated)
+    const text = updated.join('\n')
+    setSettings((p) => ({ ...p, background_music_url: text }))
+    await saveSetting('background_music_url', text)
   }
 
   async function saveSetting(key: string, value: string) {
@@ -75,14 +87,20 @@ export default function AdminPage() {
     return res.ok
   }
 
-  function updateSetting(key: string, value: string) {
-    setSettings((prev) => ({ ...prev, [key]: value }))
-    saveSetting(key, value).then((ok) => {
-      if (ok) {
-        setSettingsSaved(true)
-        setTimeout(() => setSettingsSaved(false), 2000)
+  async function loadSettings() {
+    const res = await fetch('/api/admin/settings')
+    if (res.ok) {
+      const data = await res.json()
+      if (data.settings) {
+        const filtered: Record<string, string> = {}
+        for (const [key, value] of Object.entries(data.settings as Record<string, string>)) {
+          if (value && value.trim()) filtered[key] = value.trim()
+        }
+        setSettings((prev) => ({ ...prev, ...filtered }))
+        const raw = filtered.background_music_url || ''
+        setMusicUrls(raw.split(/[\n,;]+/).map((s: string) => s.trim()).filter(Boolean))
       }
-    })
+    }
   }
 
   async function handleLogin(e: React.FormEvent) {
@@ -286,13 +304,57 @@ export default function AdminPage() {
             <Settings className="w-4 h-4 text-gold" /> Conteúdo da Página
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-            <Field label="Rótulo do Hero" value={settings.hero_label} onChange={(v) => setSettings((p) => ({ ...p, hero_label: v }))} onSave={(v) => saveSetting('hero_label', v)} />
-            <Field label="Título do Hero" value={settings.hero_title} onChange={(v) => setSettings((p) => ({ ...p, hero_title: v }))} onSave={(v) => saveSetting('hero_title', v)} />
-            <Field label="Subtítulo do Hero" value={settings.hero_subtitle} onChange={(v) => setSettings((p) => ({ ...p, hero_subtitle: v }))} onSave={(v) => saveSetting('hero_subtitle', v)} />
-            <Field label="Título do Footer" value={settings.footer_title} onChange={(v) => setSettings((p) => ({ ...p, footer_title: v }))} onSave={(v) => saveSetting('footer_title', v)} />
-            <Field label="Subtítulo do Footer" value={settings.footer_subtitle} onChange={(v) => setSettings((p) => ({ ...p, footer_subtitle: v }))} onSave={(v) => saveSetting('footer_subtitle', v)} />
-            <Field label="Música de fundo (YouTube)" value={settings.background_music_url} onChange={(v) => setSettings((p) => ({ ...p, background_music_url: v }))} onSave={(v) => saveSetting('background_music_url', v)} textarea placeholder="Separe por vírgula ou Enter para múltiplas URLs" />
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+              <Field label="Rótulo do Hero" value={settings.hero_label} onChange={(v) => setSettings((p) => ({ ...p, hero_label: v }))} onSave={(v) => saveSetting('hero_label', v)} />
+              <Field label="Título do Hero" value={settings.hero_title} onChange={(v) => setSettings((p) => ({ ...p, hero_title: v }))} onSave={(v) => saveSetting('hero_title', v)} />
+              <Field label="Subtítulo do Hero" value={settings.hero_subtitle} onChange={(v) => setSettings((p) => ({ ...p, hero_subtitle: v }))} onSave={(v) => saveSetting('hero_subtitle', v)} />
+              <Field label="Título do Footer" value={settings.footer_title} onChange={(v) => setSettings((p) => ({ ...p, footer_title: v }))} onSave={(v) => saveSetting('footer_title', v)} />
+              <Field label="Subtítulo do Footer" value={settings.footer_subtitle} onChange={(v) => setSettings((p) => ({ ...p, footer_subtitle: v }))} onSave={(v) => saveSetting('footer_subtitle', v)} />
+            </div>
+
+            <div className="bg-beige/20 rounded-xl p-3 md:p-4 space-y-3">
+              <label className="block font-sans text-xs text-dark/50 uppercase tracking-wider flex items-center gap-2">
+                <Music className="w-4 h-4 text-gold" /> Músicas de fundo (YouTube)
+              </label>
+
+              <div className="space-y-2">
+                {musicUrls.length === 0 && (
+                  <p className="text-dark/30 text-xs font-sans">Nenhuma música adicionada</p>
+                )}
+                {musicUrls.map((url, i) => (
+                  <div key={i} className="flex items-center gap-2 bg-white rounded-lg border border-beige p-2">
+                    <span className="text-xs text-dark/40 font-sans w-5 shrink-0">{i + 1}</span>
+                    <p className="flex-1 text-xs text-dark/70 font-sans truncate">{url}</p>
+                    <button
+                      onClick={() => removeMusicUrl(i)}
+                      className="w-7 h-7 rounded-md bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 flex items-center justify-center transition-colors shrink-0"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newMusicUrl}
+                  onChange={(e) => setNewMusicUrl(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addMusicUrl() } }}
+                  placeholder="Cole a URL do YouTube e clique em Adicionar"
+                  className="flex-1 px-3 py-2 rounded-lg border border-beige bg-white text-dark font-sans text-xs outline-none focus:border-gold transition-colors"
+                />
+                <button
+                  onClick={addMusicUrl}
+                  disabled={!newMusicUrl.trim()}
+                  className="px-3 py-2 rounded-lg bg-dark/80 text-white text-xs font-sans hover:bg-dark transition-colors disabled:opacity-40 flex items-center gap-1"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Adicionar
+                </button>
+              </div>
+            </div>
+
             <div className="md:col-span-2">
               <Field label="Mensagem de Boas-Vindas" value={settings.welcome_message} onChange={(v) => setSettings((p) => ({ ...p, welcome_message: v }))} onSave={(v) => saveSetting('welcome_message', v)} textarea />
             </div>
