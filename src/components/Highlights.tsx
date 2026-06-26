@@ -52,12 +52,12 @@ export default function Highlights({ fotos }: Props) {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.6 }}
-              className="absolute inset-0"
+                className="absolute inset-0 flex items-center justify-center bg-beige/50"
             >
               <img
                 src={destaques[current].url}
                 alt={`Destaque ${current + 1}`}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
             </motion.div>
           </AnimatePresence>
