@@ -4,16 +4,10 @@ import { motion } from 'framer-motion'
 import { ChevronDown } from 'lucide-react'
 
 interface Props {
-  onEnter: () => void
   heroUrl: string
 }
 
-function scrollToWelcome() {
-  const el = document.getElementById('welcome')
-  el?.scrollIntoView({ behavior: 'smooth' })
-}
-
-export default function HeroSection({ onEnter, heroUrl }: Props) {
+export default function HeroSection({ heroUrl }: Props) {
   return (
     <section className="relative h-screen w-full overflow-hidden">
       <motion.div
@@ -58,20 +52,7 @@ export default function HeroSection({ onEnter, heroUrl }: Props) {
           À espera do nosso maior presente.
         </motion.p>
 
-        <motion.button
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.2, duration: 0.8 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => {
-            const el = document.getElementById('welcome')
-            el?.scrollIntoView({ behavior: 'smooth' })
-          }}
-          className="mt-12 px-8 py-3.5 rounded-full border-2 border-white/40 bg-white/10 backdrop-blur-sm text-white font-sans text-sm tracking-widest uppercase hover:bg-white/20 transition-all"
-        >
-          Entrar no Álbum
-        </motion.button>
+        
       </div>
 
       <motion.div

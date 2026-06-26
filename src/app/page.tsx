@@ -69,7 +69,7 @@ export default function Home() {
             </div>
           ) : (
             <>
-              {heroUrl && <HeroSection onEnter={() => {}} heroUrl={heroUrl} />}
+              {heroUrl && <HeroSection heroUrl={heroUrl} />}
               <WelcomeMessage />
               <Highlights fotos={fotos} />
               <Gallery fotos={fotos} />
