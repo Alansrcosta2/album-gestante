@@ -5,9 +5,12 @@ import { ChevronDown } from 'lucide-react'
 
 interface Props {
   heroUrl: string
+  label: string
+  title: string
+  subtitle: string
 }
 
-export default function HeroSection({ heroUrl }: Props) {
+export default function HeroSection({ heroUrl, label, title, subtitle }: Props) {
   return (
     <section className="relative h-screen w-full overflow-hidden">
       <motion.div
@@ -31,7 +34,7 @@ export default function HeroSection({ heroUrl }: Props) {
           transition={{ delay: 0.5, duration: 0.8 }}
           className="font-sans text-xs uppercase tracking-[0.3em] mb-4 text-white/80"
         >
-          Ensaio Gestante
+          {label}
         </motion.p>
 
         <motion.h1
@@ -40,7 +43,7 @@ export default function HeroSection({ heroUrl }: Props) {
           transition={{ delay: 0.7, duration: 0.8 }}
           className="font-serif text-4xl md:text-6xl lg:text-7xl mb-3 leading-tight"
         >
-          Karine & Alan
+          {title}
         </motion.h1>
 
         <motion.p
@@ -49,10 +52,8 @@ export default function HeroSection({ heroUrl }: Props) {
           transition={{ delay: 0.9, duration: 0.8 }}
           className="font-sans text-sm md:text-base text-white/70 font-light italic tracking-wide"
         >
-          À espera do nosso maior presente.
+          {subtitle}
         </motion.p>
-
-        
       </div>
 
       <motion.div

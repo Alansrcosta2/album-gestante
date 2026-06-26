@@ -2,7 +2,20 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { compressImage } from '@/lib/compress-image'
-import { Lock, Upload, Trash2, X, Image as ImageIcon, GripVertical, MessageSquare } from 'lucide-react'
+import { Lock, Upload, Trash2, X, Image as ImageIcon, GripVertical, Settings } from 'lucide-react'
+
+function Field({ label, value, onChange, onSave, textarea }: { label: string; value: string; onChange: (v: string) => void; onSave: (v: string) => void; textarea?: boolean }) {
+  return (
+    <div>
+      <label className="block font-sans text-xs text-dark/50 uppercase tracking-wider mb-1">{label}</label>
+      {textarea ? (
+        <textarea value={value} onChange={(e) => onChange(e.target.value)} onBlur={(e) => onSave(e.target.value)} rows={4} className="w-full px-4 py-3 rounded-xl border border-beige bg-white text-dark font-sans text-sm outline-none focus:border-gold transition-colors resize-none" />
+      ) : (
+        <input type="text" value={value} onChange={(e) => onChange(e.target.value)} onBlur={(e) => onSave(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-beige bg-white text-dark font-sans text-sm outline-none focus:border-gold transition-colors" />
+      )}
+    </div>
+  )
+}
 
 interface Foto {
   id: number
@@ -23,7 +36,14 @@ export default function AdminPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [preview, setPreview] = useState('')
   const [newTitulo, setNewTitulo] = useState('')
-  const [welcomeMessage, setWelcomeMessage] = useState('')
+  const [settings, setSettings] = useState({
+    hero_label: 'Ensaio Gestante',
+    hero_title: 'Karine & Alan',
+    hero_subtitle: 'À espera do nosso maior presente.',
+    welcome_message: '',
+    footer_title: 'Karine & Alan',
+    footer_subtitle: 'Ensaio Gestante',
+  })
   const [settingsSaved, setSettingsSaved] = useState(false)
 
   const fileRef = useRef<HTMLInputElement>(null)
@@ -39,22 +59,29 @@ export default function AdminPage() {
     const res = await fetch('/api/admin/settings')
     if (res.ok) {
       const data = await res.json()
-      if (data.settings?.welcome_message) {
-        setWelcomeMessage(data.settings.welcome_message)
+      if (data.settings) {
+        setSettings((prev) => ({ ...prev, ...data.settings }))
       }
     }
   }
 
-  async function saveSettings() {
+  async function saveSetting(key: string, value: string) {
     const res = await fetch('/api/admin/settings', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: 'welcome_message', value: welcomeMessage }),
+      body: JSON.stringify({ key, value }),
     })
-    if (res.ok) {
-      setSettingsSaved(true)
-      setTimeout(() => setSettingsSaved(false), 2000)
-    }
+    return res.ok
+  }
+
+  function updateSetting(key: string, value: string) {
+    setSettings((prev) => ({ ...prev, [key]: value }))
+    saveSetting(key, value).then((ok) => {
+      if (ok) {
+        setSettingsSaved(true)
+        setTimeout(() => setSettingsSaved(false), 2000)
+      }
+    })
   }
 
   async function handleLogin(e: React.FormEvent) {
@@ -243,20 +270,19 @@ export default function AdminPage() {
 
         <section className="bg-white rounded-2xl p-6 border border-beige">
           <h2 className="font-serif text-lg text-dark mb-4 flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-gold" /> Mensagem de Boas-Vindas
+            <Settings className="w-4 h-4 text-gold" /> Conteúdo da Página
           </h2>
-          <textarea
-            value={welcomeMessage}
-            onChange={(e) => setWelcomeMessage(e.target.value)}
-            rows={4}
-            className="w-full px-4 py-3 rounded-xl border border-beige bg-white text-dark font-sans text-sm outline-none focus:border-gold transition-colors resize-none"
-          />
-          <button
-            onClick={saveSettings}
-            className="mt-3 px-6 py-2.5 rounded-xl bg-gradient-to-r from-gold to-rose text-white font-sans text-sm font-bold tracking-wider uppercase shadow-lg hover:opacity-90"
-          >
-            {settingsSaved ? 'Salvo!' : 'Salvar'}
-          </button>
+
+          <div className="space-y-4">
+            <Field label="Rótulo do Hero" value={settings.hero_label} onChange={(v) => setSettings((p) => ({ ...p, hero_label: v }))} onSave={(v) => saveSetting('hero_label', v)} />
+            <Field label="Título do Hero" value={settings.hero_title} onChange={(v) => setSettings((p) => ({ ...p, hero_title: v }))} onSave={(v) => saveSetting('hero_title', v)} />
+            <Field label="Subtítulo do Hero" value={settings.hero_subtitle} onChange={(v) => setSettings((p) => ({ ...p, hero_subtitle: v }))} onSave={(v) => saveSetting('hero_subtitle', v)} />
+            <Field label="Mensagem de Boas-Vindas" value={settings.welcome_message} onChange={(v) => setSettings((p) => ({ ...p, welcome_message: v }))} onSave={(v) => saveSetting('welcome_message', v)} textarea />
+            <Field label="Título do Footer" value={settings.footer_title} onChange={(v) => setSettings((p) => ({ ...p, footer_title: v }))} onSave={(v) => saveSetting('footer_title', v)} />
+            <Field label="Subtítulo do Footer" value={settings.footer_subtitle} onChange={(v) => setSettings((p) => ({ ...p, footer_subtitle: v }))} onSave={(v) => saveSetting('footer_subtitle', v)} />
+          </div>
+
+          {settingsSaved && <p className="font-sans text-xs text-green-600 mt-3">Salvo!</p>}
         </section>
 
         <section>

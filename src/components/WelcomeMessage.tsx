@@ -1,24 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 
-const DEFAULT_MESSAGE = 'Cada fotografia deste álbum registra um momento único da nossa caminhada. Entre sonhos, amor e expectativas, celebramos a beleza da espera por uma nova vida.'
+interface Props {
+  message: string
+}
 
-export default function WelcomeMessage() {
-  const [message, setMessage] = useState(DEFAULT_MESSAGE)
-
-  useEffect(() => {
-    fetch('/api/settings')
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => {
-        if (data?.settings?.welcome_message) {
-          setMessage(data.settings.welcome_message)
-        }
-      })
-      .catch(() => {})
-  }, [])
-
+export default function WelcomeMessage({ message }: Props) {
   return (
     <section id="welcome" className="py-20 md:py-28 px-6 bg-cream">
       <motion.div
