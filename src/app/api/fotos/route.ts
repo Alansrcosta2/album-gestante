@@ -9,8 +9,13 @@ export async function GET() {
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  const supabase = createClient(supabaseUrl, supabaseKey)
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
+  if (!serviceRoleKey) {
+    return NextResponse.json({ error: 'Service role key não configurada' }, { status: 500 })
+  }
+
+  const supabase = createClient(supabaseUrl, serviceRoleKey)
 
   const { data: fotos, error } = await supabase
     .from('fotos')
@@ -18,7 +23,7 @@ export async function GET() {
     .order('ordem', { ascending: true })
 
   if (error || !fotos) {
-    return NextResponse.json({ error: error?.message || 'Erro ao carregar fotos', details: error }, { status: 500 })
+    return NextResponse.json({ error: error?.message || 'Erro ao carregar fotos' }, { status: 500 })
   }
 
   const fotosComUrl = await Promise.all(
