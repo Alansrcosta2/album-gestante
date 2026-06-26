@@ -9,7 +9,6 @@ interface Props {
 
 export default function BackgroundMusic({ youtubeUrl }: Props) {
   const [isPlaying, setIsPlaying] = useState(false)
-  const [isMuted, setIsMuted] = useState(true)
   const [currentTrack, setCurrentTrack] = useState(0)
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
@@ -24,47 +23,27 @@ export default function BackgroundMusic({ youtubeUrl }: Props) {
     return null
   }
 
-  function getSrc(videoId: string, muted: boolean) {
-    return `https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoIds.join(',')}&mute=${muted ? 1 : 0}&controls=0&showinfo=0&iv_load_policy=3&modestbranding=1&rel=0&playsinline=1`
+  function getSrc(videoId: string) {
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoIds.join(',')}&mute=0&controls=0&showinfo=0&iv_load_policy=3&modestbranding=1&rel=0&playsinline=1`
   }
 
-  // Toca automaticamente mudo ao abrir
-  useEffect(() => {
-    if (videoIds.length === 0 || !iframeRef.current) return
-    iframeRef.current.src = getSrc(videoIds[currentTrack], true)
+  function play() {
+    if (!iframeRef.current || videoIds.length === 0) return
+    iframeRef.current.src = getSrc(videoIds[currentTrack])
     setIsPlaying(true)
-    setIsMuted(true)
-  }, [youtubeUrl])
+  }
 
-  // Clique em qualquer lugar ativa o som
-  useEffect(() => {
-    if (!isPlaying || !isMuted) return
-
-    function unlock() {
-      setIsMuted(false)
-      if (iframeRef.current && videoIds[currentTrack]) {
-        iframeRef.current.src = getSrc(videoIds[currentTrack], false)
-      }
-    }
-
-    document.addEventListener('click', unlock, { once: true })
-    document.addEventListener('touchstart', unlock, { once: true })
-    return () => {
-      document.removeEventListener('click', unlock)
-      document.removeEventListener('touchstart', unlock)
-    }
-  }, [isPlaying, isMuted, currentTrack, videoIds])
+  function stop() {
+    if (!iframeRef.current) return
+    iframeRef.current.src = ''
+    setIsPlaying(false)
+  }
 
   function toggle() {
-    if (!iframeRef.current) return
     if (isPlaying) {
-      iframeRef.current.src = ''
-      setIsPlaying(false)
-      setIsMuted(true)
-    } else if (videoIds.length > 0) {
-      iframeRef.current.src = getSrc(videoIds[currentTrack], false)
-      setIsPlaying(true)
-      setIsMuted(false)
+      stop()
+    } else {
+      play()
     }
   }
 
@@ -73,7 +52,7 @@ export default function BackgroundMusic({ youtubeUrl }: Props) {
     const next = (currentTrack + 1) % videoIds.length
     setCurrentTrack(next)
     if (isPlaying && iframeRef.current) {
-      iframeRef.current.src = getSrc(videoIds[next], isMuted)
+      iframeRef.current.src = getSrc(videoIds[next])
     }
   }
 
@@ -82,9 +61,21 @@ export default function BackgroundMusic({ youtubeUrl }: Props) {
     const prev = (currentTrack - 1 + videoIds.length) % videoIds.length
     setCurrentTrack(prev)
     if (isPlaying && iframeRef.current) {
-      iframeRef.current.src = getSrc(videoIds[prev], isMuted)
+      iframeRef.current.src = getSrc(videoIds[prev])
     }
   }
+
+  // Clique em qualquer lugar toca a música
+  useEffect(() => {
+    if (isPlaying) return
+
+    function handleClick() {
+      play()
+    }
+
+    document.addEventListener('click', handleClick)
+    return () => document.removeEventListener('click', handleClick)
+  }, [isPlaying, currentTrack, videoIds])
 
   if (videoIds.length === 0) return null
 
@@ -114,16 +105,10 @@ export default function BackgroundMusic({ youtubeUrl }: Props) {
         className="w-14 h-14 rounded-full bg-dark/80 backdrop-blur-sm text-white flex items-center justify-center shadow-lg hover:bg-dark transition-colors"
         aria-label={isPlaying ? 'Desligar música' : 'Ligar música'}
       >
-        {isPlaying && !isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+        {isPlaying ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
       </button>
 
-      {isPlaying && isMuted && (
-        <div className="bg-dark/80 backdrop-blur-sm text-white text-xs font-sans px-3 py-1.5 rounded-full animate-pulse select-none">
-          Toque para ouvir
-        </div>
-      )}
-
-      {isPlaying && !isMuted && hasPlaylist && (
+      {isPlaying && hasPlaylist && (
         <div className="bg-dark/80 backdrop-blur-sm text-white/70 text-xs font-sans px-2.5 py-1 rounded-full select-none">
           {currentTrack + 1}/{videoIds.length}
         </div>
