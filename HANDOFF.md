@@ -1,6 +1,6 @@
 # Álbum Gestante — Karine & Alan
 
-## Estado atual do projeto (26/06/2026 — finalizado)
+## Estado atual do projeto (26/06/2026 — em produção)
 
 ### Stack
 - **Framework**: Next.js 14 + React + TypeScript
@@ -38,7 +38,7 @@ album-gestante/
 │   │   │   ├── HeroSection.tsx           # Hero com foto, título, subtítulo, label
 │   │   │   ├── WelcomeMessage.tsx        # Mensagem de boas-vindas
 │   │   │   ├── Highlights.tsx            # Slideshow de destaques (object-contain)
-│   │   │   ├── Gallery.tsx               # Grid responsivo (object-contain)
+│   │   │   ├── Gallery.tsx               # Grid responsivo + zoom com scroll do mouse
 │   │   │   ├── PhotoModal.tsx            # Modal com swipe, download, navegação
 │   │   │   └── Footer.tsx                # Footer com título/subtítulo configuráveis
 │   │   └── lib/
@@ -68,11 +68,12 @@ album-gestante/
 | Controle total de conteúdo via admin | ✅ Implementado |
 | Sessão persiste ao recarregar | ✅ Implementado |
 | Otimizações mobile (swipe, touch-action, object-contain) | ✅ Implementado |
-| Player de música (YouTube) com playlist | ✅ Autoplay mudo + desbloqueio no primeiro toque |
+| Player de música (YouTube) com playlist | ✅ Autoplay mudo + clique em qualquer lugar ativa som |
 | Botão "Tornar Hero" no admin | ✅ Implementado |
 | Logout em ambas as telas | ✅ Implementado |
 | Admin responsivo (mobile otimizado) | ✅ Implementado |
 | Filtro de valores vazios nas settings | ✅ Valores vazios não sobrescrevem padrões |
+| Zoom na galeria (PC e mobile) | ✅ Scroll do mouse e pinch-to-zoom |
 
 ### Configurações
 
@@ -109,7 +110,7 @@ album-gestante/
 - **Tornar Hero**: ícone de estrela (⭐) nos cards das fotos — clica para definir como foto principal do Hero
 - **Exclusão**: botão de lixeira com confirmação
 - **Configurações**: todos os textos editáveis + música de fundo com gerenciamento profissional (adicionar/remover URLs individualmente)
-- **Gerenciamento de músicas**: lista visual com botão + para adicionar e X para remover cada URL
+- **Gerenciamento de músicas**: lista visual com botão + para adicionar, X para remover, e setas ▲/▼ para reordenar
 - **Logout**: botão no header (desktop) ou X (mobile)
 
 ### Funcionalidades do Álbum
@@ -118,19 +119,22 @@ album-gestante/
 - **Hero** com a primeira foto da galeria (ordem=1) — clique na ⭐ no admin para alterar
 - **Highlights**: slideshow automático das primeiras 18 fotos
 - **Galeria completa**: grid responsivo com lazy loading e infinite scroll (24 por página)
+- **Zoom na galeria**: 
+  - **PC**: passe o mouse sobre a foto e rode o scroll do mouse para dar zoom
+  - **Mobile**: pinch-to-zoom (pinça com dois dedos)
+  - Clique em X para sair do zoom
 - **Modal de foto**: swipe, download, navegação por teclado (← → Esc)
 - **Player de música**: 
   - Toca automaticamente ao abrir o álbum (mudo)
-  - Mostra "Toque para ouvir" até o primeiro clique/toque
-  - No primeiro toque: som é desbloqueado instantaneamente
+  - Clique em qualquer lugar da tela ativa o som
   - Botões play/pause, skip anterior/próximo, contador de faixa
 - **Footer** configurável
 
 ### Comportamento da Música
 
-1. **Ao abrir o álbum**: música começa automaticamente (mudo)
+1. **Ao abrir o álbum**: música começa automaticamente (muda)
 2. **Aparece aviso "Toque para ouvir"** no canto inferior esquerdo
-3. **No primeiro clique/toque** em qualquer lugar: som é ativado instantaneamente
+3. **No primeiro clique/toque** em qualquer lugar da tela: som é ativado instantaneamente
 4. A partir daí, player funciona normalmente (play/pause/skip)
 
 > **Nota**: Navegadores bloqueiam autoplay com som por padrão. O site precisa de uma interação do usuário para ativar o áudio. O comportamento implementado (mudo → toque para ouvir) é a forma mais confiável de garantir que a música toque.
@@ -154,5 +158,6 @@ album-gestante/
 - **Admin**: cookie HTTP-only `admin_session` (24h), separado da sessão do álbum
 - **Foto do Hero**: clique na ⭐ no admin para definir qualquer foto como Hero instantaneamente
 - **Música**: player com playlist. Toca automaticamente mudo, desbloqueia som no primeiro toque.
+- **Zoom na galeria**: funcional no PC (scroll do mouse) e mobile (pinch-to-zoom).
 - **Logout**: disponível tanto no álbum (X no canto superior direito) quanto no admin (botão LogOut no header).
 - **Valores vazios**: campos de settings vazios não sobrescrevem os textos padrão.
