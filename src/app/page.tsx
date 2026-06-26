@@ -8,7 +8,10 @@ import WelcomeMessage from '@/components/WelcomeMessage'
 import Highlights from '@/components/Highlights'
 import Gallery from '@/components/Gallery'
 import Footer from '@/components/Footer'
-import { supabase } from '@/lib/supabase'
+import BackgroundMusic from '@/components/BackgroundMusic'
+
+// Mude aqui a URL do YouTube para a música que quiser
+const YOUTUBE_MUSIC_URL = ''
 
 interface Foto {
   id: number
@@ -27,25 +30,13 @@ export default function Home() {
     if (!unlocked) return
 
     async function load() {
-      const { data, error } = await supabase
-        .from('fotos')
-        .select('id, titulo, ordem, storage_path')
-        .order('ordem', { ascending: true })
-
-      if (error || !data) {
+      const res = await fetch('/api/fotos')
+      if (!res.ok) {
         setLoading(false)
         return
       }
 
-      const fotosComUrl = await Promise.all(
-        data.map(async (f) => {
-          const { data: urlData } = await supabase.storage
-            .from('fotos_gestante')
-            .createSignedUrl(f.storage_path, 3600)
-          return { path: f.storage_path, url: urlData?.signedUrl || '' }
-        })
-      )
-
+      const { fotos: fotosComUrl } = await res.json()
       setFotos(fotosComUrl)
       if (fotosComUrl.length > 0) {
         setHeroUrl(fotosComUrl[0].url)
@@ -66,6 +57,7 @@ export default function Home() {
 
       {unlocked && (
         <main>
+          {YOUTUBE_MUSIC_URL && <BackgroundMusic youtubeUrl={YOUTUBE_MUSIC_URL} />}
           {loading ? (
             <div className="h-screen flex items-center justify-center bg-cream">
               <div className="text-center">

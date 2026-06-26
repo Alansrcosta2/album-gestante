@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, ChevronLeft, ChevronRight, Download, Heart } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 
 interface Props {
   fotos: { path: string; url: string }[]
@@ -14,6 +14,7 @@ interface Props {
 
 export default function PhotoModal({ fotos, currentIndex, onClose, onPrev, onNext }: Props) {
   const current = fotos[currentIndex]
+  const touchX = useRef(0)
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -32,6 +33,18 @@ export default function PhotoModal({ fotos, currentIndex, onClose, onPrev, onNex
       document.body.style.overflow = ''
     }
   }, [handleKeyDown])
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchX.current = e.touches[0].clientX
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const diff = touchX.current - e.changedTouches[0].clientX
+    if (Math.abs(diff) > 60) {
+      if (diff > 0) onNext()
+      else onPrev()
+    }
+  }
 
   const handleDownload = async () => {
     try {
@@ -56,11 +69,13 @@ export default function PhotoModal({ fotos, currentIndex, onClose, onPrev, onNex
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
         onClick={onClose}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
         <div className="absolute top-0 inset-x-0 flex items-center justify-between p-4 z-10">
           <button
             onClick={onClose}
-            className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-colors"
+            className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-colors"
           >
             <X className="w-5 h-5 text-white" />
           </button>
@@ -71,7 +86,7 @@ export default function PhotoModal({ fotos, currentIndex, onClose, onPrev, onNex
 
           <button
             onClick={handleDownload}
-            className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-colors"
+            className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-colors"
           >
             <Download className="w-4 h-4 text-white" />
           </button>
@@ -96,13 +111,13 @@ export default function PhotoModal({ fotos, currentIndex, onClose, onPrev, onNex
               onClick={(e) => { e.stopPropagation(); onPrev() }}
               className="absolute left-3 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-colors"
             >
-              <ChevronLeft className="w-6 h-6 text-white" />
+              <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 text-white" />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onNext() }}
               className="absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-colors"
             >
-              <ChevronRight className="w-6 h-6 text-white" />
+              <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-white" />
             </button>
           </>
         )}

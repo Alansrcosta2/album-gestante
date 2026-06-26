@@ -11,10 +11,21 @@ interface Props {
 export default function PasswordGate({ onUnlock }: Props) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (password === (process.env.NEXT_PUBLIC_ALBUM_PASSWORD || 'karinegestante2026')) {
+    setLoading(true)
+
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    })
+
+    setLoading(false)
+
+    if (res.ok) {
       setError(false)
       onUnlock()
     } else {
@@ -76,12 +87,16 @@ export default function PasswordGate({ onUnlock }: Props) {
 
           <motion.button
             type="submit"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-gold to-rose text-white font-sans text-sm font-bold tracking-wider uppercase shadow-lg shadow-rose/20 hover:shadow-xl hover:shadow-rose/30 transition-shadow"
+            disabled={loading}
+            whileHover={{ scale: loading ? 1 : 1.02 }}
+            whileTap={{ scale: loading ? 1 : 0.98 }}
+            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-gold to-rose text-white font-sans text-sm font-bold tracking-wider uppercase shadow-lg shadow-rose/20 hover:shadow-xl hover:shadow-rose/30 transition-shadow disabled:opacity-60"
           >
-            <Lock className="inline w-3.5 h-3.5 mr-2 -mt-0.5" />
-            Entrar
+            {loading ? (
+              <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <><Lock className="inline w-3.5 h-3.5 mr-2 -mt-0.5" />Entrar</>
+            )}
           </motion.button>
         </form>
       </motion.div>
