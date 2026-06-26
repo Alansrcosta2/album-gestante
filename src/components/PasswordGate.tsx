@@ -14,7 +14,7 @@ export default function PasswordGate({ onUnlock }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (password === (process.env.NEXT_PUBLIC_ALBUM_PASSWORD || 'gestante2024')) {
+    if (password === (process.env.NEXT_PUBLIC_ALBUM_PASSWORD || 'karinegestante2026')) {
       setError(false)
       onUnlock()
     } else {
