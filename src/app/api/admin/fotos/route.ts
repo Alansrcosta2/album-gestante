@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 async function checkAuth() {
   const cookieStore = await cookies()
@@ -12,7 +12,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
 
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await getSupabaseAdmin()
     .from('fotos')
     .select('id, titulo, ordem, storage_path, created_at')
     .order('ordem', { ascending: true })
@@ -21,7 +21,7 @@ export async function GET() {
 
   const fotosComUrl = await Promise.all(
     (data || []).map(async (f) => {
-      const { data: urlData } = await supabaseAdmin.storage
+      const { data: urlData } = await getSupabaseAdmin().storage
         .from('fotos_gestante')
         .createSignedUrl(f.storage_path, 3600)
       return { ...f, signedUrl: urlData?.signedUrl || '' }
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
   const timestamp = Date.now()
   const storagePath = `uploads/${timestamp}-${Math.random().toString(36).slice(2, 8)}.${ext}`
 
-  const { error: uploadError } = await supabaseAdmin.storage
+  const { error: uploadError } = await getSupabaseAdmin().storage
     .from('fotos_gestante')
     .upload(storagePath, buffer, { contentType: file.type })
 
@@ -57,21 +57,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: uploadError.message }, { status: 500 })
   }
 
-  const { data: maxOrdem } = await supabaseAdmin
+  const { data: maxOrdem } = await getSupabaseAdmin()
     .from('fotos')
     .select('ordem')
     .order('ordem', { ascending: false })
     .limit(1)
     .single()
 
-  const { data: newFoto, error: dbError } = await supabaseAdmin
+  const { data: newFoto, error: dbError } = await getSupabaseAdmin()
     .from('fotos')
     .insert({ titulo, storage_path: storagePath, ordem: (maxOrdem?.ordem ?? -1) + 1 })
     .select()
     .single()
 
   if (dbError) {
-    await supabaseAdmin.storage.from('fotos_gestante').remove([storagePath])
+    await getSupabaseAdmin().storage.from('fotos_gestante').remove([storagePath])
     return NextResponse.json({ error: dbError.message }, { status: 500 })
   }
 
@@ -93,7 +93,7 @@ export async function PUT(request: NextRequest) {
   if (titulo !== undefined) updates.titulo = titulo
   if (ordem !== undefined) updates.ordem = ordem
 
-  const { error } = await supabaseAdmin
+  const { error } = await getSupabaseAdmin()
     .from('fotos')
     .update(updates)
     .eq('id', id)
@@ -114,7 +114,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'ID e storage_path são obrigatórios' }, { status: 400 })
   }
 
-  const { error: storageError } = await supabaseAdmin.storage
+  const { error: storageError } = await getSupabaseAdmin().storage
     .from('fotos_gestante')
     .remove([storage_path])
 
@@ -122,7 +122,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: storageError.message }, { status: 500 })
   }
 
-  const { error: dbError } = await supabaseAdmin
+  const { error: dbError } = await getSupabaseAdmin()
     .from('fotos')
     .delete()
     .eq('id', id)
