@@ -18,7 +18,7 @@ export async function GET() {
     .order('ordem', { ascending: true })
 
   if (error || !fotos) {
-    return NextResponse.json({ error: 'Erro ao carregar fotos' }, { status: 500 })
+    return NextResponse.json({ error: error?.message || 'Erro ao carregar fotos', details: error }, { status: 500 })
   }
 
   const fotosComUrl = await Promise.all(
