@@ -8,6 +8,18 @@
 - **Backend:** Supabase (PostgreSQL + Storage)
 - **Deploy:** Vercel (frontend) + Supabase (backend)
 
+## Acesso
+
+| Acesso | URL |
+|--------|-----|
+| **Álbum (público)** | https://album-gestante.vercel.app |
+| **Admin** | https://album-gestante.vercel.app/admin |
+
+| Acesso | Senha |
+|--------|-------|
+| Álbum (público) | `karinegestante2026` |
+| Admin (`/admin`) | `karine2026` |
+
 ## Configuração Supabase
 
 ### 1. Criar projeto em [supabase.com](https://supabase.com)
@@ -19,7 +31,6 @@ Abra o SQL Editor do Supabase e cole o conteúdo de `supabase/schema.sql`.
 ### 3. Criar bucket privado
 
 No SQL Editor, execute:
-
 ```sql
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('fotos_gestante', 'fotos_gestante', false);
@@ -30,7 +41,7 @@ VALUES ('fotos_gestante', 'fotos_gestante', false);
 No dashboard do Supabase, vá em **Settings > API** e copie:
 - `Project URL` → `NEXT_PUBLIC_SUPABASE_URL`
 - `anon public` → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `service_role` → `SUPABASE_SERVICE_KEY` (para o script de upload)
+- `service_role` → `SUPABASE_SERVICE_ROLE_KEY`
 
 ## Upload das Fotos
 
@@ -62,9 +73,28 @@ npm run dev
 2. Configure as variáveis de ambiente:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `NEXT_PUBLIC_ALBUM_PASSWORD`
+   - `ALBUM_PASSWORD`
+   - `ADMIN_PASSWORD`
+   - `SUPABASE_SERVICE_ROLE_KEY`
 3. Deploy automático ativado
 
-## Senha do Álbum
+## Funcionalidades
 
-A senha padrão é `gestante2024`. Altere em `NEXT_PUBLIC_ALBUM_PASSWORD` no `.env.local`.
+- **Tela de senha** para acesso ao álbum
+- **Hero** com a primeira foto da galeria
+- **Highlights**: slideshow automático das primeiras fotos
+- **Galeria completa** com lazy loading e infinite scroll
+- **Modal de foto** com swipe, download e navegação por teclado
+- **Player de música** (YouTube) configurável via admin
+- **Admin panel** para upload, edição, exclusão e reordenação de fotos
+- **Configurações** editáveis (hero, welcome, footer, música)
+
+## Variáveis de Ambiente
+
+| Variável | Descrição |
+|----------|-----------|
+| `NEXT_PUBLIC_SUPABASE_URL` | URL do projeto Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Chave anon do Supabase |
+| `ALBUM_PASSWORD` | Senha do álbum público |
+| `ADMIN_PASSWORD` | Senha do painel admin |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (server-side) |

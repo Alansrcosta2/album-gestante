@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { compressImage } from '@/lib/compress-image'
-import { Lock, Upload, Trash2, X, Image as ImageIcon, GripVertical, Settings } from 'lucide-react'
+import { Lock, Upload, Trash2, X, Image as ImageIcon, GripVertical, Settings, LogOut } from 'lucide-react'
 
 function Field({ label, value, onChange, onSave, textarea }: { label: string; value: string; onChange: (v: string) => void; onSave: (v: string) => void; textarea?: boolean }) {
   return (
@@ -43,6 +43,7 @@ export default function AdminPage() {
     welcome_message: '',
     footer_title: 'Karine & Alan',
     footer_subtitle: 'Ensaio Gestante',
+    background_music_url: '',
   })
   const [settingsSaved, setSettingsSaved] = useState(false)
 
@@ -203,15 +204,27 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-cream">
       <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-beige">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <h1 className="font-serif text-lg text-dark">Admin — Álbum Gestante</h1>
-          <span className="font-sans text-xs text-dark/40">{fotos.length} fotos</span>
+        <div className="max-w-5xl mx-auto px-3 md:px-4 py-2 md:py-3 flex items-center justify-between">
+          <h1 className="font-serif text-base md:text-lg text-dark">Admin — Álbum Gestante</h1>
+          <div className="flex items-center gap-2 md:gap-3">
+            <span className="font-sans text-[10px] md:text-xs text-dark/40">{fotos.length} fotos</span>
+            <button
+              onClick={async () => {
+                await fetch('/api/admin/auth/logout', { method: 'POST' })
+                window.location.href = '/'
+              }}
+              className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-beige/50 flex items-center justify-center hover:bg-beige transition-colors"
+              aria-label="Sair do admin"
+            >
+              <LogOut className="w-3.5 h-3.5 md:w-4 md:h-4 text-dark/60" />
+            </button>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-8 space-y-10">
-        <section className="bg-white rounded-2xl p-6 border border-beige">
-          <h2 className="font-serif text-lg text-dark mb-4 flex items-center gap-2">
+      <main className="max-w-5xl mx-auto px-3 md:px-4 py-4 md:py-8 space-y-4 md:space-y-10">
+        <section className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 border border-beige">
+          <h2 className="font-serif text-base md:text-lg text-dark mb-3 md:mb-4 flex items-center gap-2">
             <Upload className="w-4 h-4 text-gold" /> Upload de Foto
           </h2>
 
@@ -219,16 +232,16 @@ export default function AdminPage() {
             ref={dropRef}
             onDrop={handleDrop}
             onDragOver={(e) => e.preventDefault()}
-            className="border-2 border-dashed border-beige rounded-xl p-8 text-center cursor-pointer hover:border-gold transition-colors"
+            className="border-2 border-dashed border-beige rounded-lg md:rounded-xl p-4 md:p-8 text-center cursor-pointer hover:border-gold transition-colors"
             onClick={() => fileRef.current?.click()}
           >
             {preview ? (
-              <img src={preview} alt="Preview" className="max-h-48 mx-auto rounded-lg" />
+              <img src={preview} alt="Preview" className="max-h-32 md:max-h-48 mx-auto rounded-lg" />
             ) : (
               <div className="text-dark/40">
-                <ImageIcon className="w-10 h-10 mx-auto mb-2" />
-                <p className="font-sans text-sm">Clique ou arraste uma foto aqui</p>
-                <p className="font-sans text-xs text-dark/20 mt-1">Será comprimida para JPEG 2000px</p>
+                <ImageIcon className="w-8 h-8 md:w-10 md:h-10 mx-auto mb-2" />
+                <p className="font-sans text-xs md:text-sm">Clique ou arraste uma foto aqui</p>
+                <p className="font-sans text-[10px] md:text-xs text-dark/20 mt-1">Será comprimida para JPEG 2000px</p>
               </div>
             )}
             <input
@@ -241,25 +254,25 @@ export default function AdminPage() {
           </div>
 
           {selectedFile && (
-            <div className="mt-4 space-y-3">
+            <div className="mt-3 md:mt-4 space-y-2 md:space-y-3">
               <input
                 type="text"
                 value={newTitulo}
                 onChange={(e) => setNewTitulo(e.target.value)}
                 placeholder="Título da foto (opcional)"
-                className="w-full px-4 py-2.5 rounded-xl border border-beige bg-white text-dark font-sans text-sm outline-none focus:border-gold transition-colors"
+                className="w-full px-3 md:px-4 py-2 md:py-2.5 rounded-lg md:rounded-xl border border-beige bg-white text-dark font-sans text-xs md:text-sm outline-none focus:border-gold transition-colors"
               />
               <div className="flex gap-2">
                 <button
                   onClick={handleUpload}
                   disabled={uploading}
-                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-gold to-rose text-white font-sans text-sm font-bold tracking-wider uppercase shadow-lg disabled:opacity-60"
+                  className="flex-1 py-2 md:py-2.5 rounded-lg md:rounded-xl bg-gradient-to-r from-gold to-rose text-white font-sans text-xs md:text-sm font-bold tracking-wider uppercase shadow-lg disabled:opacity-60"
                 >
                   {uploading ? 'Enviando...' : 'Enviar'}
                 </button>
                 <button
                   onClick={() => { setSelectedFile(null); setPreview(''); setNewTitulo(''); if (fileRef.current) fileRef.current.value = '' }}
-                  className="px-4 py-2.5 rounded-xl border border-beige text-dark/60 hover:text-dark font-sans text-sm"
+                  className="px-3 md:px-4 py-2 md:py-2.5 rounded-lg md:rounded-xl border border-beige text-dark/60 hover:text-dark font-sans text-xs md:text-sm"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -268,59 +281,60 @@ export default function AdminPage() {
           )}
         </section>
 
-        <section className="bg-white rounded-2xl p-6 border border-beige">
-          <h2 className="font-serif text-lg text-dark mb-4 flex items-center gap-2">
+        <section className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 border border-beige">
+          <h2 className="font-serif text-base md:text-lg text-dark mb-3 md:mb-4 flex items-center gap-2">
             <Settings className="w-4 h-4 text-gold" /> Conteúdo da Página
           </h2>
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             <Field label="Rótulo do Hero" value={settings.hero_label} onChange={(v) => setSettings((p) => ({ ...p, hero_label: v }))} onSave={(v) => saveSetting('hero_label', v)} />
             <Field label="Título do Hero" value={settings.hero_title} onChange={(v) => setSettings((p) => ({ ...p, hero_title: v }))} onSave={(v) => saveSetting('hero_title', v)} />
             <Field label="Subtítulo do Hero" value={settings.hero_subtitle} onChange={(v) => setSettings((p) => ({ ...p, hero_subtitle: v }))} onSave={(v) => saveSetting('hero_subtitle', v)} />
-            <Field label="Mensagem de Boas-Vindas" value={settings.welcome_message} onChange={(v) => setSettings((p) => ({ ...p, welcome_message: v }))} onSave={(v) => saveSetting('welcome_message', v)} textarea />
             <Field label="Título do Footer" value={settings.footer_title} onChange={(v) => setSettings((p) => ({ ...p, footer_title: v }))} onSave={(v) => saveSetting('footer_title', v)} />
             <Field label="Subtítulo do Footer" value={settings.footer_subtitle} onChange={(v) => setSettings((p) => ({ ...p, footer_subtitle: v }))} onSave={(v) => saveSetting('footer_subtitle', v)} />
+            <Field label="Música de fundo (YouTube)" value={settings.background_music_url} onChange={(v) => setSettings((p) => ({ ...p, background_music_url: v }))} onSave={(v) => saveSetting('background_music_url', v)} />
+            <div className="md:col-span-2">
+              <Field label="Mensagem de Boas-Vindas" value={settings.welcome_message} onChange={(v) => setSettings((p) => ({ ...p, welcome_message: v }))} onSave={(v) => saveSetting('welcome_message', v)} textarea />
+            </div>
           </div>
 
-          {settingsSaved && <p className="font-sans text-xs text-green-600 mt-3">Salvo!</p>}
+          {settingsSaved && <p className="font-sans text-xs text-green-600 mt-2 md:mt-3">Salvo!</p>}
         </section>
 
         <section>
-          <h2 className="font-serif text-lg text-dark mb-4">Fotos ({fotos.length})</h2>
+          <h2 className="font-serif text-base md:text-lg text-dark mb-3 md:mb-4">Fotos ({fotos.length})</h2>
 
           {loading ? (
-            <p className="font-sans text-sm text-dark/40">Carregando...</p>
+            <p className="font-sans text-xs md:text-sm text-dark/40">Carregando...</p>
           ) : fotos.length === 0 ? (
-            <p className="font-sans text-sm text-dark/40">Nenhuma foto ainda</p>
+            <p className="font-sans text-xs md:text-sm text-dark/40">Nenhuma foto ainda</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {fotos.map((foto) => (
                 <div
                   key={foto.id}
-                  className="bg-white rounded-xl border border-beige p-3 flex items-center gap-4"
+                  className="bg-white rounded-lg md:rounded-xl border border-beige p-2 md:p-3 flex items-center gap-2 md:gap-4"
                 >
-                  <GripVertical className="w-4 h-4 text-dark/20 shrink-0" />
-
-                  <div className="w-16 h-16 rounded-lg overflow-hidden bg-beige/30 shrink-0">
+                  <div className="w-10 h-10 md:w-16 md:h-16 rounded-md md:rounded-lg overflow-hidden bg-beige/30 shrink-0">
                     {foto.signedUrl && (
                       <img src={foto.signedUrl} alt="" className="w-full h-full object-cover" />
                     )}
                   </div>
 
-                  <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex-1 min-w-0 space-y-0.5 md:space-y-1">
                     <input
                       type="text"
                       defaultValue={foto.titulo}
                       onBlur={(e) => {
                         if (e.target.value !== foto.titulo) handleEdit(foto, 'titulo', e.target.value)
                       }}
-                      className="w-full bg-transparent font-sans text-sm text-dark outline-none border-b border-transparent focus:border-gold transition-colors"
+                      className="w-full bg-transparent font-sans text-xs md:text-sm text-dark outline-none border-b border-transparent focus:border-gold transition-colors"
                       placeholder="Sem título"
                     />
-                    <p className="font-sans text-[10px] text-dark/30 truncate">{foto.storage_path}</p>
+                    <p className="font-sans text-[9px] md:text-[10px] text-dark/30 truncate">{foto.storage_path}</p>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-1 md:gap-2 shrink-0">
                     <input
                       type="number"
                       defaultValue={foto.ordem}
@@ -328,13 +342,13 @@ export default function AdminPage() {
                         const v = parseInt(e.target.value)
                         if (!isNaN(v) && v !== foto.ordem) handleEdit(foto, 'ordem', v)
                       }}
-                      className="w-14 px-2 py-1 rounded-lg border border-beige bg-white text-dark font-sans text-xs text-center outline-none focus:border-gold transition-colors"
+                      className="w-10 md:w-14 px-1.5 md:px-2 py-1 rounded-md md:rounded-lg border border-beige bg-white text-dark font-sans text-xs text-center outline-none focus:border-gold transition-colors"
                     />
                     <button
                       onClick={() => handleDelete(foto)}
-                      className="w-8 h-8 rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 flex items-center justify-center transition-colors"
+                      className="w-7 h-7 md:w-8 md:h-8 rounded-md md:rounded-lg bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 flex items-center justify-center transition-colors"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
                     </button>
                   </div>
                 </div>

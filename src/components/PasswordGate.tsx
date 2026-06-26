@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Lock, Heart } from 'lucide-react'
+import { Lock, Heart, X } from 'lucide-react'
 
 interface Props {
   onUnlock: () => void
@@ -34,6 +34,12 @@ export default function PasswordGate({ onUnlock }: Props) {
     }
   }
 
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    setPassword('')
+    setError(false)
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -41,6 +47,14 @@ export default function PasswordGate({ onUnlock }: Props) {
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-cream"
     >
+      <button
+        onClick={handleLogout}
+        className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/50 flex items-center justify-center hover:bg-white/80 transition-colors"
+        aria-label="Sair"
+      >
+        <X className="w-5 h-5 text-dark/60" />
+      </button>
+
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}

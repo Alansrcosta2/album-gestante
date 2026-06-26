@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 export async function GET() {
   const cookieStore = await cookies()
@@ -8,14 +8,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
-  if (!serviceRoleKey) {
-    return NextResponse.json({ error: 'Service role key não configurada' }, { status: 500 })
-  }
-
-  const supabase = createClient(supabaseUrl, serviceRoleKey)
+  const supabase = getSupabaseAdmin()
 
   const { data: fotos, error } = await supabase
     .from('fotos')
