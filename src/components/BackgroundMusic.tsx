@@ -89,7 +89,7 @@ export default function BackgroundMusic({ youtubeUrl }: Props) {
         className="w-14 h-14 rounded-full bg-dark/80 backdrop-blur-sm text-white flex items-center justify-center shadow-lg hover:bg-dark transition-colors active:scale-95"
         aria-label={playing ? 'Desligar música' : 'Ligar música'}
       >
-        {playing ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+          {playing ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
       </button>
 
       {!unlocked && playing && (
