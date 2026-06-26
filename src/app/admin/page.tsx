@@ -4,14 +4,14 @@ import { useState, useEffect, useRef } from 'react'
 import { compressImage } from '@/lib/compress-image'
 import { Lock, Upload, Trash2, X, Image as ImageIcon, GripVertical, Settings, LogOut } from 'lucide-react'
 
-function Field({ label, value, onChange, onSave, textarea }: { label: string; value: string; onChange: (v: string) => void; onSave: (v: string) => void; textarea?: boolean }) {
+function Field({ label, value, onChange, onSave, textarea, placeholder }: { label: string; value: string; onChange: (v: string) => void; onSave: (v: string) => void; textarea?: boolean; placeholder?: string }) {
   return (
     <div>
       <label className="block font-sans text-xs text-dark/50 uppercase tracking-wider mb-1">{label}</label>
       {textarea ? (
-        <textarea value={value} onChange={(e) => onChange(e.target.value)} onBlur={(e) => onSave(e.target.value)} rows={4} className="w-full px-4 py-3 rounded-xl border border-beige bg-white text-dark font-sans text-sm outline-none focus:border-gold transition-colors resize-none" />
+        <textarea value={value} onChange={(e) => onChange(e.target.value)} onBlur={(e) => onSave(e.target.value)} rows={3} placeholder={placeholder} className="w-full px-4 py-3 rounded-xl border border-beige bg-white text-dark font-sans text-sm outline-none focus:border-gold transition-colors resize-none" />
       ) : (
-        <input type="text" value={value} onChange={(e) => onChange(e.target.value)} onBlur={(e) => onSave(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-beige bg-white text-dark font-sans text-sm outline-none focus:border-gold transition-colors" />
+        <input type="text" value={value} onChange={(e) => onChange(e.target.value)} onBlur={(e) => onSave(e.target.value)} placeholder={placeholder} className="w-full px-4 py-2.5 rounded-xl border border-beige bg-white text-dark font-sans text-sm outline-none focus:border-gold transition-colors" />
       )}
     </div>
   )
@@ -292,7 +292,7 @@ export default function AdminPage() {
             <Field label="Subtítulo do Hero" value={settings.hero_subtitle} onChange={(v) => setSettings((p) => ({ ...p, hero_subtitle: v }))} onSave={(v) => saveSetting('hero_subtitle', v)} />
             <Field label="Título do Footer" value={settings.footer_title} onChange={(v) => setSettings((p) => ({ ...p, footer_title: v }))} onSave={(v) => saveSetting('footer_title', v)} />
             <Field label="Subtítulo do Footer" value={settings.footer_subtitle} onChange={(v) => setSettings((p) => ({ ...p, footer_subtitle: v }))} onSave={(v) => saveSetting('footer_subtitle', v)} />
-            <Field label="Música de fundo (YouTube)" value={settings.background_music_url} onChange={(v) => setSettings((p) => ({ ...p, background_music_url: v }))} onSave={(v) => saveSetting('background_music_url', v)} />
+            <Field label="Música de fundo (YouTube)" value={settings.background_music_url} onChange={(v) => setSettings((p) => ({ ...p, background_music_url: v }))} onSave={(v) => saveSetting('background_music_url', v)} textarea placeholder="Separe por vírgula ou Enter para múltiplas URLs" />
             <div className="md:col-span-2">
               <Field label="Mensagem de Boas-Vindas" value={settings.welcome_message} onChange={(v) => setSettings((p) => ({ ...p, welcome_message: v }))} onSave={(v) => saveSetting('welcome_message', v)} textarea />
             </div>

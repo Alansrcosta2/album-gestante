@@ -77,7 +77,7 @@ export default function BackgroundMusic({ youtubeUrl }: Props) {
     <>
       <iframe
         ref={iframeRef}
-        className="hidden"
+        className="fixed bottom-0 left-0 w-1 h-1 opacity-0 pointer-events-none"
         allow="autoplay"
         title="bg-music"
       />
