@@ -1,0 +1,26 @@
+# Seguranca
+.env
+.env.*
+*.key
+*.pem
+
+# Dependencias
+node_modules/
+.npm-cache/
+
+# Build
+.next/
+dist/
+build/
+out/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.log
