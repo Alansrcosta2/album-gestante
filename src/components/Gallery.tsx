@@ -20,10 +20,21 @@ export default function Gallery({ fotos }: Props) {
   const [displayed, setDisplayed] = useState(ITEMS_PER_PAGE)
   const [modalIndex, setModalIndex] = useState<number | null>(null)
   const loaderRef = useRef<HTMLDivElement>(null)
+  
+  const [isDesktop, setIsDesktop] = useState(false)
   const [zoomedId, setZoomedId] = useState<string | null>(null)
   const [zoomLevel, setZoomLevel] = useState(1)
   const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 })
   const galleryRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const checkDesktop = () => {
+      setIsDesktop(window.innerWidth >= 1024)
+    }
+    checkDesktop()
+    window.addEventListener('resize', checkDesktop)
+    return () => window.removeEventListener('resize', checkDesktop)
+  }, [])
 
   useEffect(() => {
     if (fotos.length <= displayed) return
@@ -45,32 +56,30 @@ export default function Gallery({ fotos }: Props) {
   const visibleFotos = fotos.slice(0, displayed)
 
   function handleWheel(e: React.WheelEvent) {
-    if (!galleryRef.current) return
-
-    // Se não está no zoom, detecta se o scroll é sobre uma foto
+    if (!isDesktop) return
+    
     if (!zoomedId) {
       const target = e.target as HTMLElement
       const img = target.closest('img')
-      if (!img) return // deixa o scroll normal da página funcionar
-
+      if (!img) return
+      
       const foto = visibleFotos.find(f => f.url === img.src)
       if (foto) {
         openZoom(foto)
-        // Aplica o zoom no primeiro scroll
         const delta = e.deltaY > 0 ? -0.3 : 0.3
         setZoomLevel((prev) => Math.max(1, Math.min(4, prev + delta)))
       }
       return
     }
 
-    // Se já está no zoom, ajusta o nível
     e.preventDefault()
     const delta = e.deltaY > 0 ? -0.3 : 0.3
     setZoomLevel((prev) => Math.max(1, Math.min(4, prev + delta)))
   }
 
   function handleMouseMove(e: React.MouseEvent) {
-    if (!zoomedId || !galleryRef.current) return
+    if (!isDesktop || !zoomedId || !galleryRef.current) return
+    
     const rect = galleryRef.current.getBoundingClientRect()
     const x = ((e.clientX - rect.left) / rect.width) * 100
     const y = ((e.clientY - rect.top) / rect.height) * 100
@@ -86,6 +95,14 @@ export default function Gallery({ fotos }: Props) {
   function closeZoom() {
     setZoomedId(null)
     setZoomLevel(1)
+  }
+
+  function handlePhotoClick(index: number) {
+    if (isDesktop) {
+      openZoom(visibleFotos[index])
+    } else {
+      setModalIndex(index)
+    }
   }
 
   return (
@@ -105,12 +122,15 @@ export default function Gallery({ fotos }: Props) {
           </p>
         </motion.div>
 
-        {zoomedId && (
+        {isDesktop && zoomedId && (
           <div
             ref={galleryRef}
             className="fixed inset-0 z-40 bg-black/90 backdrop-blur-sm flex items-center justify-center"
             onWheel={handleWheel}
             onMouseMove={handleMouseMove}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) closeZoom()
+            }}
           >
             <img
               src={fotos.find(f => f.path === zoomedId)?.url}
@@ -130,7 +150,7 @@ export default function Gallery({ fotos }: Props) {
               <X className="w-6 h-6 text-white" />
             </button>
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-dark/80 backdrop-blur-sm text-white text-xs font-sans px-3 py-1.5 rounded-full select-none">
-              Scroll ou pinch para zoom • Clique em X para sair
+              Scroll para zoom • Clique fora ou X para sair
             </div>
           </div>
         )}
@@ -143,7 +163,7 @@ export default function Gallery({ fotos }: Props) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: (i % ITEMS_PER_PAGE) * 0.02 }}
-              onClick={() => openZoom(foto)}
+              onClick={() => handlePhotoClick(i)}
               className="group relative aspect-[3/4] rounded-xl overflow-hidden bg-beige/30 focus:outline-none cursor-zoom-in"
             >
               <img
@@ -170,7 +190,7 @@ export default function Gallery({ fotos }: Props) {
           </div>
         )}
 
-        {modalIndex !== null && (
+        {!isDesktop && modalIndex !== null && (
           <PhotoModal
             fotos={fotos}
             currentIndex={modalIndex}
