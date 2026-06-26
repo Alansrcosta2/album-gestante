@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { compressImage } from '@/lib/compress-image'
-import { Lock, Upload, Trash2, X, Image as ImageIcon, GripVertical, Settings, LogOut, Plus, Music, Star } from 'lucide-react'
+import { Lock, Upload, Trash2, X, Image as ImageIcon, GripVertical, Settings, LogOut, Plus, Music, Star, ChevronUp, ChevronDown } from 'lucide-react'
 
 function Field({ label, value, onChange, onSave, textarea, placeholder }: { label: string; value: string; onChange: (v: string) => void; onSave: (v: string) => void; textarea?: boolean; placeholder?: string }) {
   return (
@@ -72,6 +72,19 @@ export default function AdminPage() {
 
   async function removeMusicUrl(index: number) {
     const updated = musicUrls.filter((_, i) => i !== index)
+    setMusicUrls(updated)
+    const text = updated.join('\n')
+    setSettings((p) => ({ ...p, background_music_url: text }))
+    await saveSetting('background_music_url', text)
+  }
+
+  async function moveMusicUrl(index: number, direction: 'up' | 'down') {
+    const newIndex = direction === 'up' ? index - 1 : index + 1
+    if (newIndex < 0 || newIndex >= musicUrls.length) return
+    const updated = [...musicUrls]
+    const temp = updated[index]
+    updated[index] = updated[newIndex]
+    updated[newIndex] = temp
     setMusicUrls(updated)
     const text = updated.join('\n')
     setSettings((p) => ({ ...p, background_music_url: text }))
@@ -336,6 +349,22 @@ export default function AdminPage() {
                 )}
                 {musicUrls.map((url, i) => (
                   <div key={i} className="flex items-center gap-2 bg-white rounded-lg border border-beige p-2">
+                    <div className="flex flex-col gap-0.5 shrink-0">
+                      <button
+                        onClick={() => moveMusicUrl(i, 'up')}
+                        disabled={i === 0}
+                        className="w-5 h-5 rounded flex items-center justify-center text-dark/30 hover:text-dark hover:bg-beige/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronUp className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => moveMusicUrl(i, 'down')}
+                        disabled={i === musicUrls.length - 1}
+                        className="w-5 h-5 rounded flex items-center justify-center text-dark/30 hover:text-dark hover:bg-beige/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                     <span className="text-xs text-dark/40 font-sans w-5 shrink-0">{i + 1}</span>
                     <p className="flex-1 text-xs text-dark/70 font-sans truncate">{url}</p>
                     <button

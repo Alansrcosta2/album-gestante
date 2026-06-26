@@ -1,6 +1,6 @@
 # Álbum Gestante — Karine & Alan
 
-## Estado atual do projeto (26/06/2026)
+## Estado atual do projeto (26/06/2026 — finalizado)
 
 ### Stack
 - **Framework**: Next.js 14 + React + TypeScript
@@ -33,7 +33,7 @@ album-gestante/
 │   │   │   └── settings/route.ts         # Lê settings públicos (protegido por sessão álbum)
 │   │   ├── admin/page.tsx                # Painel admin completo
 │   │   ├── components/
-│   │   │   ├── BackgroundMusic.tsx       # Player YouTube com playlist (configurável via admin)
+│   │   │   ├── BackgroundMusic.tsx       # Player YouTube com playlist (autoplay mudo + unlock no toque)
 │   │   │   ├── PasswordGate.tsx          # Tela de senha do álbum (com botão logout)
 │   │   │   ├── HeroSection.tsx           # Hero com foto, título, subtítulo, label
 │   │   │   ├── WelcomeMessage.tsx        # Mensagem de boas-vindas
@@ -68,9 +68,11 @@ album-gestante/
 | Controle total de conteúdo via admin | ✅ Implementado |
 | Sessão persiste ao recarregar | ✅ Implementado |
 | Otimizações mobile (swipe, touch-action, object-contain) | ✅ Implementado |
-| Player de música (YouTube) com playlist | ✅ Configurável via admin |
+| Player de música (YouTube) com playlist | ✅ Autoplay mudo + desbloqueio no primeiro toque |
+| Botão "Tornar Hero" no admin | ✅ Implementado |
 | Logout em ambas as telas | ✅ Implementado |
 | Admin responsivo (mobile otimizado) | ✅ Implementado |
+| Filtro de valores vazios nas settings | ✅ Valores vazios não sobrescrevem padrões |
 
 ### Configurações
 
@@ -95,29 +97,43 @@ album-gestante/
 
 1. **Vercel → Settings → Deployment Protection → Disabled** (senão pede login da Vercel)
 2. No **Admin (`/admin`)** com senha `karine2026`:
-   - Adicionar URLs do YouTube das músicas (campo "Música de fundo") — separar por vírgula ou Enter para múltiplas
+   - Adicionar URLs do YouTube das músicas no campo "Música de fundo" → botão **"Adicionar"** (uma por linha)
    - Ajustar textos (Hero, Welcome, Footer) se quiser
-   - Reordenar fotos se quiser mudar a foto do Hero (a de `ordem=1`)
+   - Alterar foto do Hero: clique no ícone **⭐** na foto desejada da lista
 3. Testar no celular e desktop
 
 ### Funcionalidades do Admin
 
 - **Upload de fotos**: clique ou arraste, compressão automática (JPEG 2000px, 85%)
 - **Edição inline**: título e ordem diretamente na lista
+- **Tornar Hero**: ícone de estrela (⭐) nos cards das fotos — clica para definir como foto principal do Hero
 - **Exclusão**: botão de lixeira com confirmação
-- **Configurações**: todos os textos editáveis + música de fundo
-- **Playlist de música**: múltiplas URLs, botões de avançar/voltar, contador
+- **Configurações**: todos os textos editáveis + música de fundo com gerenciamento profissional (adicionar/remover URLs individualmente)
+- **Gerenciamento de músicas**: lista visual com botão + para adicionar e X para remover cada URL
 - **Logout**: botão no header (desktop) ou X (mobile)
 
 ### Funcionalidades do Álbum
 
 - **Tela de senha** com botão de logout (X no canto superior direito)
-- **Hero** com a primeira foto da galeria (ordem=1)
+- **Hero** com a primeira foto da galeria (ordem=1) — clique na ⭐ no admin para alterar
 - **Highlights**: slideshow automático das primeiras 18 fotos
 - **Galeria completa**: grid responsivo com lazy loading e infinite scroll (24 por página)
 - **Modal de foto**: swipe, download, navegação por teclado (← → Esc)
-- **Player de música**: botão play/pause, skip anterior/próximo, contador
+- **Player de música**: 
+  - Toca automaticamente ao abrir o álbum (mudo)
+  - Mostra "Toque para ouvir" até o primeiro clique/toque
+  - No primeiro toque: som é desbloqueado instantaneamente
+  - Botões play/pause, skip anterior/próximo, contador de faixa
 - **Footer** configurável
+
+### Comportamento da Música
+
+1. **Ao abrir o álbum**: música começa automaticamente (mudo)
+2. **Aparece aviso "Toque para ouvir"** no canto inferior esquerdo
+3. **No primeiro clique/toque** em qualquer lugar: som é ativado instantaneamente
+4. A partir daí, player funciona normalmente (play/pause/skip)
+
+> **Nota**: Navegadores bloqueiam autoplay com som por padrão. O site precisa de uma interação do usuário para ativar o áudio. O comportamento implementado (mudo → toque para ouvir) é a forma mais confiável de garantir que a música toque.
 
 ### Variáveis de ambiente (já configuradas na Vercel)
 
@@ -136,6 +152,7 @@ album-gestante/
 - **Service Role Key** usada apenas no server-side (API routes admin + `/api/fotos`)
 - **Sessão do álbum**: cookie HTTP-only `album_session` (24h)
 - **Admin**: cookie HTTP-only `admin_session` (24h), separado da sessão do álbum
-- **Foto do Hero** = primeira foto da galeria (`ordem=1`). Mude a ordem no admin pra trocar.
-- **Música**: playlist de URLs do YouTube separadas por vírgula ou Enter. O player toca automaticamente na ordem.
+- **Foto do Hero**: clique na ⭐ no admin para definir qualquer foto como Hero instantaneamente
+- **Música**: player com playlist. Toca automaticamente mudo, desbloqueia som no primeiro toque.
 - **Logout**: disponível tanto no álbum (X no canto superior direito) quanto no admin (botão LogOut no header).
+- **Valores vazios**: campos de settings vazios não sobrescrevem os textos padrão.
