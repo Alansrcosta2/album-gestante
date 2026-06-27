@@ -98,11 +98,7 @@ export default function Gallery({ fotos }: Props) {
   }
 
   function handlePhotoClick(index: number) {
-    if (isDesktop) {
-      openZoom(visibleFotos[index])
-    } else {
-      setModalIndex(index)
-    }
+    setModalIndex(index)
   }
 
   return (
@@ -190,7 +186,7 @@ export default function Gallery({ fotos }: Props) {
           </div>
         )}
 
-        {!isDesktop && modalIndex !== null && (
+        {modalIndex !== null && (
           <PhotoModal
             fotos={fotos}
             currentIndex={modalIndex}
