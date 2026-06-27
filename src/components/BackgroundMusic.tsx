@@ -35,7 +35,7 @@ export default function BackgroundMusic({ youtubeUrl }: Props) {
   }
 
   function getSrc(videoId: string) {
-    return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&showinfo=0&iv_load_policy=3&modestbranding=1&rel=0&playsinline=1`
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3&modestbranding=1&rel=0&playsinline=1`
   }
 
   // Load first video on mount
