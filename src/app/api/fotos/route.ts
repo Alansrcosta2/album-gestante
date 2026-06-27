@@ -27,7 +27,7 @@ export async function GET() {
   const urlMap = new Map<string, string>()
   if (signedData) {
     for (const item of signedData) {
-      if (item.signedUrl) urlMap.set(item.path, item.signedUrl)
+      if (item.signedUrl && item.path) urlMap.set(item.path, item.signedUrl)
     }
   }
 

@@ -19,6 +19,7 @@ const BackgroundMusic = forwardRef<MusicHandle, Props>(({ youtubeUrl }, ref) => 
   const hasUnmutedRef = useRef(false)
   const isPlayingRef = useRef(false)
   const currentTrackRef = useRef(0)
+  const loadedRef = useRef(false)
 
   const urls = youtubeUrl.split(/[\n,;]+/).map((s) => s.trim()).filter(Boolean)
   const videoIds = urls.map(extractVideoId).filter((id): id is string => id !== null)
@@ -42,36 +43,42 @@ const BackgroundMusic = forwardRef<MusicHandle, Props>(({ youtubeUrl }, ref) => 
     return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3&modestbranding=1&rel=0&playsinline=1`
   }
 
-  function unmuteAndRestart() {
-    postMessage('seekTo', 0)
-    postMessage('unMute')
-    postMessage('playVideo')
-    setIsPlaying(true)
-    isPlayingRef.current = true
+  function loadAndPlay(videoId: string) {
+    const iframe = iframeRef.current
+    if (!iframe) return
+
+    loadedRef.current = false
+
+    function onLoad() {
+      const el = iframeRef.current
+      if (!el) return
+      el.removeEventListener('load', onLoad)
+      loadedRef.current = true
+      postMessage('seekTo', 0)
+      postMessage('unMute')
+      postMessage('playVideo')
+      setIsPlaying(true)
+      isPlayingRef.current = true
+    }
+
+    iframe.addEventListener('load', onLoad)
+    iframe.src = getSrc(videoId)
   }
 
-  useImperativeHandle(ref, () => ({
-    unmute() {
-      if (hasUnmutedRef.current) return
-      hasUnmutedRef.current = true
-      setHasUnmuted(true)
-      unmuteAndRestart()
-    },
-  }), [])
+  function unmute() {
+    if (hasUnmutedRef.current) return
+    hasUnmutedRef.current = true
+    setHasUnmuted(true)
+    loadAndPlay(videoIds[currentTrackRef.current])
+  }
 
-  // Load first video on mount (starts muted)
-  useEffect(() => {
-    if (videoIds.length === 0 || !iframeRef.current) return
-    iframeRef.current.src = getSrc(videoIds[0])
-  }, [videoIds.length])
+  useImperativeHandle(ref, () => ({ unmute }), [])
 
-  // Click anywhere to unmute and restart from beginning
+  // Click anywhere to unmute
   useEffect(() => {
     function handleClick() {
       if (hasUnmutedRef.current) return
-      hasUnmutedRef.current = true
-      setHasUnmuted(true)
-      unmuteAndRestart()
+      unmute()
     }
 
     document.addEventListener('click', handleClick)
@@ -80,9 +87,7 @@ const BackgroundMusic = forwardRef<MusicHandle, Props>(({ youtubeUrl }, ref) => 
 
   function toggle() {
     if (!hasUnmutedRef.current) {
-      hasUnmutedRef.current = true
-      setHasUnmuted(true)
-      unmuteAndRestart()
+      unmute()
       return
     }
     if (isPlayingRef.current) {
@@ -101,10 +106,9 @@ const BackgroundMusic = forwardRef<MusicHandle, Props>(({ youtubeUrl }, ref) => 
     const next = (currentTrackRef.current + 1) % videoIds.length
     currentTrackRef.current = next
     setCurrentTrack(next)
-    if (!iframeRef.current) return
-    iframeRef.current.src = getSrc(videoIds[next])
-    setIsPlaying(true)
-    isPlayingRef.current = true
+    if (hasUnmutedRef.current) {
+      loadAndPlay(videoIds[next])
+    }
   }
 
   function prevTrack() {
@@ -112,10 +116,9 @@ const BackgroundMusic = forwardRef<MusicHandle, Props>(({ youtubeUrl }, ref) => 
     const prev = (currentTrackRef.current - 1 + videoIds.length) % videoIds.length
     currentTrackRef.current = prev
     setCurrentTrack(prev)
-    if (!iframeRef.current) return
-    iframeRef.current.src = getSrc(videoIds[prev])
-    setIsPlaying(true)
-    isPlayingRef.current = true
+    if (hasUnmutedRef.current) {
+      loadAndPlay(videoIds[prev])
+    }
   }
 
   if (videoIds.length === 0) return null
