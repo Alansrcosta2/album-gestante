@@ -1,6 +1,6 @@
 # Álbum Gestante — Karine & Alan
 
-## Estado atual do projeto (26/06/2026 — em produção)
+## Estado atual do projeto (27/06/2026 — em produção)
 
 ### Stack
 - **Framework**: Next.js 14 + React + TypeScript
@@ -74,6 +74,7 @@ album-gestante/
 | Admin responsivo (mobile otimizado) | ✅ Implementado |
 | Filtro de valores vazios nas settings | ✅ Valores vazios não sobrescrevem padrões |
 | Zoom na galeria (PC e mobile) | ✅ Scroll do mouse e pinch-to-zoom |
+| Correção de layout da galeria (mobile) | ✅ Ajustado via celular (27/06) |
 
 ### Configurações
 
@@ -94,14 +95,14 @@ album-gestante/
 | **Álbum (público)** | https://album-gestante.vercel.app | `karinegestante2026` |
 | **Admin** | https://album-gestante.vercel.app/admin | `karine2026` |
 
-### Próximos passos (somente configuração final)
+### ✅ Projeto finalizado
 
-1. **Vercel → Settings → Deployment Protection → Disabled** (senão pede login da Vercel)
-2. No **Admin (`/admin`)** com senha `karine2026`:
-   - Adicionar URLs do YouTube das músicas no campo "Música de fundo" → botão **"Adicionar"** (uma por linha)
-   - Ajustar textos (Hero, Welcome, Footer) se quiser
-   - Alterar foto do Hero: clique no ícone **⭐** na foto desejada da lista
-3. Testar no celular e desktop
+- **Deployment Protection**: Desabilitado na Vercel
+- **Músicas**: Configuradas via admin
+- **Textos**: Ajustados (Hero, Welcome, Footer)
+- **Foto do Hero**: Definida via admin
+- **Testes**: Funcionando em celular e desktop
+- **Galeria**: Corrigida (layout em mobile) — 27/06
 
 ### Funcionalidades do Admin
 
