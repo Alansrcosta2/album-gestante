@@ -1,6 +1,6 @@
 # Álbum Gestante — Karine & Alan
 
-## Estado atual do projeto (27/06/2026 — em produção)
+## Estado atual do projeto (28/06/2026 — em produção)
 
 ### Stack
 - **Framework**: Next.js 14 + React + TypeScript
@@ -17,7 +17,7 @@ album-gestante/
 │   ├── app/
 │   │   ├── globals.css
 │   │   ├── layout.tsx
-│   │   ├── page.tsx                      # Página pública do álbum
+│   │   ├── page.tsx                      # Página pública do álbum (transição "Mamãe do Vítor")
 │   │   ├── api/
 │   │   │   ├── auth/
 │   │   │   │   ├── route.ts              # Login do álbum (senha do álbum)
@@ -33,13 +33,13 @@ album-gestante/
 │   │   │   └── settings/route.ts         # Lê settings públicos (protegido por sessão álbum)
 │   │   ├── admin/page.tsx                # Painel admin completo
 │   │   ├── components/
-│   │   │   ├── BackgroundMusic.tsx       # Player YouTube com playlist (autoplay mudo + unlock no toque)
+│   │   │   ├── BackgroundMusic.tsx       # Player YouTube com iframe + postMessage (só carrega no 1º clique)
 │   │   │   ├── PasswordGate.tsx          # Tela de senha do álbum (com botão logout)
-│   │   │   ├── HeroSection.tsx           # Hero com foto, título, subtítulo, label
+│   │   │   ├── HeroSection.tsx           # Hero com foto + botão "Entrar na Galeria"
 │   │   │   ├── WelcomeMessage.tsx        # Mensagem de boas-vindas
-│   │   │   ├── Highlights.tsx            # Slideshow de destaques (object-contain)
-│   │   │   ├── Gallery.tsx               # Grid responsivo + zoom com scroll do mouse
-│   │   │   ├── PhotoModal.tsx            # Modal com swipe, download, navegação
+│   │   │   ├── Highlights.tsx            # Slideshow de destaques
+│   │   │   ├── Gallery.tsx               # Grid responsivo + infinite scroll
+│   │   │   ├── PhotoModal.tsx            # Modal com swipe, download, zoom (PC: scroll/clique)
 │   │   │   └── Footer.tsx                # Footer com título/subtítulo configuráveis
 │   │   └── lib/
 │   │       ├── compress-image.ts         # Compressão client-side (2000px, JPEG 85%)
@@ -68,13 +68,19 @@ album-gestante/
 | Controle total de conteúdo via admin | ✅ Implementado |
 | Sessão persiste ao recarregar | ✅ Implementado |
 | Otimizações mobile (swipe, touch-action, object-contain) | ✅ Implementado |
-| Player de música (YouTube) com playlist | ✅ Autoplay mudo + clique em qualquer lugar ativa som |
+| Player de música (YouTube) com playlist | ✅ iframe + postMessage, só carrega no 1º clique |
 | Botão "Tornar Hero" no admin | ✅ Implementado |
 | Logout em ambas as telas | ✅ Implementado |
 | Admin responsivo (mobile otimizado) | ✅ Implementado |
 | Filtro de valores vazios nas settings | ✅ Valores vazios não sobrescrevem padrões |
-| Zoom na galeria (PC e mobile) | ✅ Scroll do mouse e pinch-to-zoom |
-| Correção de layout da galeria (mobile) | ✅ Ajustado via celular (27/06) |
+| Corrigido áudio no iPhone (Safari/Chrome) | ✅ postMessage unMute + iframe com enablejsapi |
+| Ícone do speaker corrigido | ✅ VolumeX mudo / Volume2 tocando |
+| Botão "Entrar na Galeria" no Hero | ✅ Scroll suave + ativa música |
+| Voltar ao topo (↑) | ✅ Botão flutuante ao descer a página |
+| Transição "Mamãe do Vítor" | ✅ Fade creme com texto pulsando (2.5s) |
+| Galeria uniforme (PC e mobile) | ✅ PhotoModal nos dois, sem zoom overlay separado |
+| Zoom no PhotoModal (PC) | ✅ Clique cicla 1x→2x→3x→1x, scroll do mouse |
+| API de fotos otimizada | ✅ createSignedUrls em lote (em vez de 1 por foto) |
 
 ### Configurações
 
@@ -101,8 +107,9 @@ album-gestante/
 - **Músicas**: Configuradas via admin
 - **Textos**: Ajustados (Hero, Welcome, Footer)
 - **Foto do Hero**: Definida via admin
-- **Testes**: Funcionando em celular e desktop
-- **Galeria**: Corrigida (layout em mobile) — 27/06
+- **Galeria**: PhotoModal uniforme (PC e mobile) com zoom no PC
+- **Áudio iPhone**: Corrigido (iframe + postMessage + enablejsapi)
+- **Transição**: "Mamãe do Vítor" pulsando ao entrar na galeria
 
 ### Funcionalidades do Admin
 
@@ -133,12 +140,12 @@ album-gestante/
 
 ### Comportamento da Música
 
-1. **Ao abrir o álbum**: música começa automaticamente (muda)
-2. **Aparece aviso "Toque para ouvir"** no canto inferior esquerdo
-3. **No primeiro clique/toque** em qualquer lugar da tela: som é ativado instantaneamente
-4. A partir daí, player funciona normalmente (play/pause/skip)
+1. **Ao abrir o álbum**: iframe do YouTube fica vazio (só carrega no primeiro clique)
+2. **No primeiro clique** (botão "Entrar na Galeria" ou qualquer lugar): iframe carrega com `mute=1, autoplay=1`, envia `postMessage('seekTo',0)`, `postMessage('unMute')`, `postMessage('playVideo')`
+3. **A partir daí**, player funciona normalmente (play/pause/skip)
+4. **No iPhone**: o clique do usuário permite ativar o áudio via postMessage
 
-> **Nota**: Navegadores bloqueiam autoplay com som por padrão. O site precisa de uma interação do usuário para ativar o áudio. O comportamento implementado (mudo → toque para ouvir) é a forma mais confiável de garantir que a música toque.
+> **Nota**: No iPhone, o áudio só ativa com interação do usuário. O `postMessage('unMute')` dentro do evento de clique resolve isso.
 
 ### Variáveis de ambiente (já configuradas na Vercel)
 
@@ -154,11 +161,14 @@ album-gestante/
 
 - **Repo público** no GitHub (necessário para deploy grátis na Vercel Hobby)
 - **Bucket privado** no Supabase — acesso só via signed URLs (expiram em 1h)
+- **API de fotos** usa `createSignedUrls` (lote) em vez de chamadas individuais
 - **Service Role Key** usada apenas no server-side (API routes admin + `/api/fotos`)
 - **Sessão do álbum**: cookie HTTP-only `album_session` (24h)
 - **Admin**: cookie HTTP-only `admin_session` (24h), separado da sessão do álbum
 - **Foto do Hero**: clique na ⭐ no admin para definir qualquer foto como Hero instantaneamente
-- **Música**: player com playlist. Toca automaticamente mudo, desbloqueia som no primeiro toque.
-- **Zoom na galeria**: funcional no PC (scroll do mouse) e mobile (pinch-to-zoom).
+- **Música**: iframe só carrega no primeiro clique. Usa `postMessage` para controle (unMute, seekTo, playVideo, pauseVideo). Requer `enablejsapi=1` no embed.
+- **Galeria**: PhotoModal funciona igual no PC e mobile. No PC, clique na foto cicla zoom (1x→2x→3x→1x) e scroll do mouse também funciona. Duplo clique reseta.
+- **Transição "Entrar na Galeria"**: overlay creme com "Mamãe do Vítor" pulsando (2.5s), ativa a música e faz scroll suave até a galeria.
+- **Voltar ao topo**: botão (↑) aparece no canto inferior direito ao descer a página.
 - **Logout**: disponível tanto no álbum (X no canto superior direito) quanto no admin (botão LogOut no header).
 - **Valores vazios**: campos de settings vazios não sobrescrevem os textos padrão.
