@@ -7,10 +7,23 @@ interface Props {
   youtubeUrl: string
 }
 
+declare global {
+  interface Window {
+    YT: any
+    onYouTubeIframeAPIReady: (() => void) | undefined
+  }
+}
+
 export default function BackgroundMusic({ youtubeUrl }: Props) {
   const [isPlaying, setIsPlaying] = useState(false)
+  const [hasUnmuted, setHasUnmuted] = useState(false)
   const [currentTrack, setCurrentTrack] = useState(0)
-  const iframeRef = useRef<HTMLIFrameElement>(null)
+  const playerRef = useRef<any>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const hasUnmutedRef = useRef(false)
+  const isPlayingRef = useRef(false)
+  const videoIdsRef = useRef<string[]>([])
+  const currentTrackRef = useRef(0)
 
   const urls = youtubeUrl.split(/[\n,;]+/).map((s) => s.trim()).filter(Boolean)
   const videoIds = urls.map(extractVideoId).filter((id): id is string => id !== null)
@@ -23,59 +36,124 @@ export default function BackgroundMusic({ youtubeUrl }: Props) {
     return null
   }
 
-  function getSrc(videoId: string) {
-    return `https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoIds.join(',')}&mute=0&controls=0&showinfo=0&iv_load_policy=3&modestbranding=1&rel=0&playsinline=1`
-  }
-
-  function play() {
-    if (!iframeRef.current || videoIds.length === 0) return
-    iframeRef.current.src = getSrc(videoIds[currentTrack])
-    setIsPlaying(true)
-  }
-
-  function stop() {
-    if (!iframeRef.current) return
-    iframeRef.current.src = ''
-    setIsPlaying(false)
-  }
-
-  function toggle() {
-    if (isPlaying) {
-      stop()
-    } else {
-      play()
-    }
-  }
-
-  function nextTrack() {
-    if (!hasPlaylist) return
-    const next = (currentTrack + 1) % videoIds.length
-    setCurrentTrack(next)
-    if (isPlaying && iframeRef.current) {
-      iframeRef.current.src = getSrc(videoIds[next])
-    }
-  }
-
-  function prevTrack() {
-    if (!hasPlaylist) return
-    const prev = (currentTrack - 1 + videoIds.length) % videoIds.length
-    setCurrentTrack(prev)
-    if (isPlaying && iframeRef.current) {
-      iframeRef.current.src = getSrc(videoIds[prev])
-    }
-  }
-
-  // Clique em qualquer lugar toca a música
   useEffect(() => {
-    if (isPlaying) return
+    videoIdsRef.current = videoIds
+  }, [videoIds])
 
+  useEffect(() => {
+    if (videoIds.length === 0) return
+
+    function createPlayer() {
+      if (!containerRef.current) return
+      playerRef.current = new window.YT.Player(containerRef.current, {
+        height: '1',
+        width: '1',
+        videoId: videoIds[0],
+        playerVars: {
+          autoplay: 1,
+          mute: 1,
+          controls: 0,
+          showinfo: 0,
+          iv_load_policy: 3,
+          modestbranding: 1,
+          rel: 0,
+          playsinline: 1,
+        },
+        events: {
+          onReady: () => {
+            if (!playerRef.current) return
+            playerRef.current.playVideo()
+            setIsPlaying(true)
+            isPlayingRef.current = true
+          },
+          onStateChange: (event: any) => {
+            if (event.data === window.YT.PlayerState.ENDED && videoIdsRef.current.length > 1) {
+              const next = (currentTrackRef.current + 1) % videoIdsRef.current.length
+              currentTrackRef.current = next
+              setCurrentTrack(next)
+              playerRef.current.loadVideoById(videoIdsRef.current[next])
+            }
+          },
+        },
+      })
+    }
+
+    if (typeof window.YT !== 'undefined' && window.YT.loaded) {
+      createPlayer()
+    } else {
+      window.onYouTubeIframeAPIReady = createPlayer
+      if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+        const tag = document.createElement('script')
+        tag.src = 'https://www.youtube.com/iframe_api'
+        document.body.appendChild(tag)
+      }
+    }
+
+    return () => {
+      window.onYouTubeIframeAPIReady = undefined
+      if (playerRef.current && playerRef.current.destroy) {
+        playerRef.current.destroy()
+        playerRef.current = null
+      }
+    }
+  }, [videoIds.length])
+
+  useEffect(() => {
     function handleClick() {
-      play()
+      if (!playerRef.current || hasUnmutedRef.current) return
+      hasUnmutedRef.current = true
+      setHasUnmuted(true)
+      playerRef.current.unMute()
+      playerRef.current.playVideo()
+      setIsPlaying(true)
+      isPlayingRef.current = true
     }
 
     document.addEventListener('click', handleClick)
     return () => document.removeEventListener('click', handleClick)
-  }, [isPlaying, currentTrack, videoIds])
+  }, [])
+
+  function toggle() {
+    if (!playerRef.current) return
+    if (!hasUnmutedRef.current) {
+      hasUnmutedRef.current = true
+      setHasUnmuted(true)
+      playerRef.current.unMute()
+      playerRef.current.playVideo()
+      setIsPlaying(true)
+      isPlayingRef.current = true
+      return
+    }
+    if (isPlayingRef.current) {
+      playerRef.current.pauseVideo()
+      setIsPlaying(false)
+      isPlayingRef.current = false
+    } else {
+      playerRef.current.playVideo()
+      setIsPlaying(true)
+      isPlayingRef.current = true
+    }
+  }
+
+  function nextTrack() {
+    if (!hasPlaylist || !playerRef.current) return
+    const next = (currentTrackRef.current + 1) % videoIds.length
+    currentTrackRef.current = next
+    setCurrentTrack(next)
+    playerRef.current.loadVideoById(videoIds[next])
+    setIsPlaying(true)
+    isPlayingRef.current = true
+  }
+
+  function prevTrack() {
+    if (!hasPlaylist || !playerRef.current) return
+    const prev = (currentTrackRef.current - 1 + videoIds.length) % videoIds.length
+    currentTrackRef.current = prev
+    setCurrentTrack(prev)
+    playerRef.current.loadVideoById(videoIds[prev])
+    setIsPlaying(true)
+    isPlayingRef.current = true
+  }
 
   if (videoIds.length === 0) return null
 
@@ -105,7 +183,7 @@ export default function BackgroundMusic({ youtubeUrl }: Props) {
         className="w-14 h-14 rounded-full bg-dark/80 backdrop-blur-sm text-white flex items-center justify-center shadow-lg hover:bg-dark transition-colors"
         aria-label={isPlaying ? 'Desligar música' : 'Ligar música'}
       >
-        {isPlaying ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+        {isPlaying && hasUnmuted ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
       </button>
 
       {isPlaying && hasPlaylist && (
@@ -114,13 +192,7 @@ export default function BackgroundMusic({ youtubeUrl }: Props) {
         </div>
       )}
 
-      <iframe
-        ref={iframeRef}
-        className="fixed bottom-0 left-0 w-1 h-1 opacity-0 pointer-events-none"
-        allow="autoplay; encrypted-media"
-        allowFullScreen
-        title="bg-music"
-      />
+      <div ref={containerRef} className="fixed bottom-0 left-0 w-0 h-0 opacity-0 pointer-events-none" />
     </div>
   )
 }
