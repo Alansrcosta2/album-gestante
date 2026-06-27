@@ -67,12 +67,15 @@ export default function PhotoModal({ fotos, currentIndex, onClose, onPrev, onNex
 
   const handleImageClick = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!isDesktop || zoomLevel === 1) return
+    if (!isDesktop) return
     const now = Date.now()
     if (now - lastClickRef.current < 300) {
       setZoomLevel(1)
+      lastClickRef.current = 0
+      return
     }
     lastClickRef.current = now
+    setZoomLevel((prev) => prev >= 3 ? 1 : prev + 1)
   }
 
   const handleDownload = async () => {
