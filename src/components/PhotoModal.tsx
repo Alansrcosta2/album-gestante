@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useCallback, useRef } from 'react'
+import { useEffect, useCallback, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ChevronLeft, ChevronRight, Download } from 'lucide-react'
 
@@ -15,6 +15,9 @@ interface Props {
 export default function PhotoModal({ fotos, currentIndex, onClose, onPrev, onNext }: Props) {
   const current = fotos[currentIndex]
   const touchX = useRef(0)
+  const [isDesktop, setIsDesktop] = useState(false)
+  const [zoomLevel, setZoomLevel] = useState(1)
+  const lastClickRef = useRef(0)
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -34,16 +37,42 @@ export default function PhotoModal({ fotos, currentIndex, onClose, onPrev, onNex
     }
   }, [handleKeyDown])
 
+  useEffect(() => {
+    setIsDesktop(window.innerWidth >= 1024)
+  }, [])
+
+  // Reset zoom when changing photos
+  useEffect(() => {
+    setZoomLevel(1)
+  }, [currentIndex])
+
   const handleTouchStart = (e: React.TouchEvent) => {
     touchX.current = e.touches[0].clientX
   }
 
   const handleTouchEnd = (e: React.TouchEvent) => {
+    if (zoomLevel > 1) return
     const diff = touchX.current - e.changedTouches[0].clientX
     if (Math.abs(diff) > 60) {
       if (diff > 0) onNext()
       else onPrev()
     }
+  }
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!isDesktop) return
+    const delta = e.deltaY > 0 ? -0.5 : 0.5
+    setZoomLevel((prev) => Math.max(1, Math.min(4, prev + delta)))
+  }
+
+  const handleImageClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!isDesktop || zoomLevel === 1) return
+    const now = Date.now()
+    if (now - lastClickRef.current < 300) {
+      setZoomLevel(1)
+    }
+    lastClickRef.current = now
   }
 
   const handleDownload = async () => {
@@ -72,7 +101,7 @@ export default function PhotoModal({ fotos, currentIndex, onClose, onPrev, onNex
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        <div className="absolute top-0 inset-x-0 flex items-center justify-between p-4 z-10">
+        <div className="absolute top-0 inset-x-0 flex items-center justify-between p-4 z-20">
           <button
             onClick={onClose}
             className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-colors"
@@ -100,22 +129,27 @@ export default function PhotoModal({ fotos, currentIndex, onClose, onPrev, onNex
           transition={{ duration: 0.2 }}
           src={current.url}
           alt={`Foto ${currentIndex + 1}`}
-          className="max-h-full max-w-full object-contain p-4 select-none"
+          className="max-h-full max-w-full object-contain p-4 select-none cursor-zoom-in"
           draggable={false}
-          onClick={(e) => e.stopPropagation()}
+          onClick={handleImageClick}
+          onWheel={handleWheel}
+          style={isDesktop && zoomLevel > 1 ? {
+            transform: `scale(${zoomLevel})`,
+            transition: 'transform 0.15s ease-out',
+          } : undefined}
         />
 
         {fotos.length > 1 && (
           <>
             <button
               onClick={(e) => { e.stopPropagation(); onPrev() }}
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-colors"
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-colors z-20"
             >
               <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 text-white" />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onNext() }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center hover:bg-white/20 transition-colors z-20"
             >
               <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-white" />
             </button>

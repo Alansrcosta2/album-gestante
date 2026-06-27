@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import PasswordGate from '@/components/PasswordGate'
 import HeroSection from '@/components/HeroSection'
 import WelcomeMessage from '@/components/WelcomeMessage'
@@ -41,6 +41,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [settings, setSettings] = useState<Settings>(DEFAULTS)
   const [showScrollTop, setShowScrollTop] = useState(false)
+  const [transitionStage, setTransitionStage] = useState<'idle' | 'transitioning'>('idle')
   const musicRef = useRef<MusicHandle>(null)
   const galleryRef = useRef<HTMLDivElement>(null)
 
@@ -54,7 +55,11 @@ export default function Home() {
 
   function handleEnterGallery() {
     musicRef.current?.unmute()
-    galleryRef.current?.scrollIntoView({ behavior: 'smooth' })
+    setTransitionStage('transitioning')
+    setTimeout(() => {
+      galleryRef.current?.scrollIntoView({ behavior: 'smooth' })
+      setTimeout(() => setTransitionStage('idle'), 550)
+    }, 150)
   }
 
   function scrollToTop() {
@@ -163,6 +168,25 @@ export default function Home() {
               </>
             )}
           </main>
+
+          <AnimatePresence>
+            {transitionStage === 'transitioning' && (
+              <motion.div
+                key="page-transition"
+                initial={{ opacity: 0, scale: 1 }}
+                animate={{ opacity: 1, scale: 1.4 }}
+                exit={{ opacity: 0, scale: 1.6 }}
+                transition={{ duration: 0.5, ease: 'easeInOut' }}
+                className="fixed inset-0 z-50 pointer-events-none overflow-hidden"
+              >
+                <img
+                  src={heroUrl}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </>
       )}
     </>
