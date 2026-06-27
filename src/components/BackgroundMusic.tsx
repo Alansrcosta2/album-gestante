@@ -7,22 +7,13 @@ interface Props {
   youtubeUrl: string
 }
 
-declare global {
-  interface Window {
-    YT: any
-    onYouTubeIframeAPIReady: (() => void) | undefined
-  }
-}
-
 export default function BackgroundMusic({ youtubeUrl }: Props) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [hasUnmuted, setHasUnmuted] = useState(false)
   const [currentTrack, setCurrentTrack] = useState(0)
-  const playerRef = useRef<any>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const iframeRef = useRef<HTMLIFrameElement>(null)
   const hasUnmutedRef = useRef(false)
   const isPlayingRef = useRef(false)
-  const videoIdsRef = useRef<string[]>([])
   const currentTrackRef = useRef(0)
 
   const urls = youtubeUrl.split(/[\n,;]+/).map((s) => s.trim()).filter(Boolean)
@@ -36,75 +27,33 @@ export default function BackgroundMusic({ youtubeUrl }: Props) {
     return null
   }
 
+  function postMessage(func: string, args?: any) {
+    iframeRef.current?.contentWindow?.postMessage(
+      JSON.stringify({ event: 'command', func, args }),
+      'https://www.youtube.com'
+    )
+  }
+
+  function getSrc(videoId: string) {
+    return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&showinfo=0&iv_load_policy=3&modestbranding=1&rel=0&playsinline=1`
+  }
+
+  // Load first video on mount
   useEffect(() => {
-    videoIdsRef.current = videoIds
-  }, [videoIds])
-
-  useEffect(() => {
-    if (videoIds.length === 0) return
-
-    function createPlayer() {
-      if (!containerRef.current) return
-      playerRef.current = new window.YT.Player(containerRef.current, {
-        height: '1',
-        width: '1',
-        videoId: videoIds[0],
-        playerVars: {
-          autoplay: 1,
-          mute: 1,
-          controls: 0,
-          showinfo: 0,
-          iv_load_policy: 3,
-          modestbranding: 1,
-          rel: 0,
-          playsinline: 1,
-        },
-        events: {
-          onReady: () => {
-            if (!playerRef.current) return
-            playerRef.current.playVideo()
-            setIsPlaying(true)
-            isPlayingRef.current = true
-          },
-          onStateChange: (event: any) => {
-            if (event.data === window.YT.PlayerState.ENDED && videoIdsRef.current.length > 1) {
-              const next = (currentTrackRef.current + 1) % videoIdsRef.current.length
-              currentTrackRef.current = next
-              setCurrentTrack(next)
-              playerRef.current.loadVideoById(videoIdsRef.current[next])
-            }
-          },
-        },
-      })
-    }
-
-    if (typeof window.YT !== 'undefined' && window.YT.loaded) {
-      createPlayer()
-    } else {
-      window.onYouTubeIframeAPIReady = createPlayer
-      if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
-        const tag = document.createElement('script')
-        tag.src = 'https://www.youtube.com/iframe_api'
-        document.body.appendChild(tag)
-      }
-    }
-
-    return () => {
-      window.onYouTubeIframeAPIReady = undefined
-      if (playerRef.current && playerRef.current.destroy) {
-        playerRef.current.destroy()
-        playerRef.current = null
-      }
-    }
+    if (videoIds.length === 0 || !iframeRef.current) return
+    iframeRef.current.src = getSrc(videoIds[0])
+    setIsPlaying(true)
+    isPlayingRef.current = true
   }, [videoIds.length])
 
+  // Click anywhere to unmute
   useEffect(() => {
     function handleClick() {
-      if (!playerRef.current || hasUnmutedRef.current) return
+      if (hasUnmutedRef.current) return
       hasUnmutedRef.current = true
       setHasUnmuted(true)
-      playerRef.current.unMute()
-      playerRef.current.playVideo()
+      postMessage('unMute')
+      postMessage('playVideo')
       setIsPlaying(true)
       isPlayingRef.current = true
     }
@@ -114,43 +63,44 @@ export default function BackgroundMusic({ youtubeUrl }: Props) {
   }, [])
 
   function toggle() {
-    if (!playerRef.current) return
     if (!hasUnmutedRef.current) {
       hasUnmutedRef.current = true
       setHasUnmuted(true)
-      playerRef.current.unMute()
-      playerRef.current.playVideo()
+      postMessage('unMute')
+      postMessage('playVideo')
       setIsPlaying(true)
       isPlayingRef.current = true
       return
     }
     if (isPlayingRef.current) {
-      playerRef.current.pauseVideo()
+      postMessage('pauseVideo')
       setIsPlaying(false)
       isPlayingRef.current = false
     } else {
-      playerRef.current.playVideo()
+      postMessage('playVideo')
       setIsPlaying(true)
       isPlayingRef.current = true
     }
   }
 
   function nextTrack() {
-    if (!hasPlaylist || !playerRef.current) return
+    if (!hasPlaylist) return
     const next = (currentTrackRef.current + 1) % videoIds.length
     currentTrackRef.current = next
     setCurrentTrack(next)
-    playerRef.current.loadVideoById(videoIds[next])
+    if (!iframeRef.current) return
+    iframeRef.current.src = getSrc(videoIds[next])
     setIsPlaying(true)
     isPlayingRef.current = true
   }
 
   function prevTrack() {
-    if (!hasPlaylist || !playerRef.current) return
+    if (!hasPlaylist) return
     const prev = (currentTrackRef.current - 1 + videoIds.length) % videoIds.length
     currentTrackRef.current = prev
     setCurrentTrack(prev)
-    playerRef.current.loadVideoById(videoIds[prev])
+    if (!iframeRef.current) return
+    iframeRef.current.src = getSrc(videoIds[prev])
     setIsPlaying(true)
     isPlayingRef.current = true
   }
@@ -192,7 +142,13 @@ export default function BackgroundMusic({ youtubeUrl }: Props) {
         </div>
       )}
 
-      <div ref={containerRef} className="fixed bottom-0 left-0 w-0 h-0 opacity-0 pointer-events-none" />
+      <iframe
+        ref={iframeRef}
+        className="fixed bottom-0 left-0 w-1 h-1 opacity-0 pointer-events-none"
+        allow="autoplay; encrypted-media"
+        allowFullScreen
+        title="bg-music"
+      />
     </div>
   )
 }
