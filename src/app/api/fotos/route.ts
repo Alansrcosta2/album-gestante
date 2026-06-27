@@ -19,14 +19,22 @@ export async function GET() {
     return NextResponse.json({ error: error?.message || 'Erro ao carregar fotos' }, { status: 500 })
   }
 
-  const fotosComUrl = await Promise.all(
-    fotos.map(async (f) => {
-      const { data: urlData } = await supabase.storage
-        .from('fotos_gestante')
-        .createSignedUrl(f.storage_path, 3600)
-      return { path: f.storage_path, url: urlData?.signedUrl || '' }
-    })
-  )
+  const paths = fotos.map((f) => f.storage_path)
+  const { data: signedData } = await supabase.storage
+    .from('fotos_gestante')
+    .createSignedUrls(paths, 3600)
+
+  const urlMap = new Map<string, string>()
+  if (signedData) {
+    for (const item of signedData) {
+      if (item.signedUrl) urlMap.set(item.path, item.signedUrl)
+    }
+  }
+
+  const fotosComUrl = fotos.map((f) => ({
+    path: f.storage_path,
+    url: urlMap.get(f.storage_path) || '',
+  }))
 
   return NextResponse.json({ fotos: fotosComUrl })
 }
