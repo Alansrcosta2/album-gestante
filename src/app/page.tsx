@@ -58,8 +58,8 @@ export default function Home() {
     setTransitionStage('transitioning')
     setTimeout(() => {
       galleryRef.current?.scrollIntoView({ behavior: 'smooth' })
-      setTimeout(() => setTransitionStage('idle'), 800)
-    }, 300)
+    }, 400)
+    setTimeout(() => setTransitionStage('idle'), 2300)
   }
 
   function scrollToTop() {
@@ -180,10 +180,18 @@ export default function Home() {
                 className="fixed inset-0 z-50 bg-cream flex items-center justify-center"
               >
                 <motion.p
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.15, duration: 0.35 }}
-                  className="font-serif text-3xl md:text-5xl text-dark"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                    scale: [1, 1.08, 1, 1.08, 1, 1, 1],
+                  }}
+                  transition={{
+                    opacity: { delay: 0.15, duration: 0.35 },
+                    y: { delay: 0.15, duration: 0.35 },
+                    scale: { delay: 0.5, duration: 1.2, ease: 'easeInOut' },
+                  }}
+                  className="font-serif text-3xl md:text-5xl text-dark drop-shadow-sm"
                 >
                   Mamãe do Vítor
                 </motion.p>
