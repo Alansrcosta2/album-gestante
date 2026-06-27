@@ -1,16 +1,17 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { ChevronDown } from 'lucide-react'
+import { ArrowDown } from 'lucide-react'
 
 interface Props {
   heroUrl: string
   label: string
   title: string
   subtitle: string
+  onEnterGallery?: () => void
 }
 
-export default function HeroSection({ heroUrl, label, title, subtitle }: Props) {
+export default function HeroSection({ heroUrl, label, title, subtitle, onEnterGallery }: Props) {
   return (
     <section className="relative h-screen w-full overflow-hidden">
       <motion.div
@@ -50,19 +51,22 @@ export default function HeroSection({ heroUrl, label, title, subtitle }: Props) 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.9, duration: 0.8 }}
-          className="font-sans text-sm md:text-base text-white/70 font-light italic tracking-wide"
+          className="font-sans text-sm md:text-base text-white/70 font-light italic tracking-wide mb-10"
         >
           {subtitle}
         </motion.p>
-      </div>
 
-      <motion.div
-        animate={{ y: [0, 8, 0] }}
-        transition={{ duration: 2, repeat: Infinity }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
-      >
-        <ChevronDown className="w-6 h-6 text-white/60" />
-      </motion.div>
+        <motion.button
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.1, duration: 0.8 }}
+          onClick={onEnterGallery}
+          className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-white/20 backdrop-blur-md text-white font-sans text-sm tracking-wide border border-white/30 hover:bg-white/30 transition-all"
+        >
+          Entrar na Galeria
+          <ArrowDown className="w-4 h-4" />
+        </motion.button>
+      </div>
     </section>
   )
 }

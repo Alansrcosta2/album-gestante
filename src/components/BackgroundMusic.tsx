@@ -1,13 +1,17 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import { Volume2, VolumeX, SkipBack, SkipForward } from 'lucide-react'
 
 interface Props {
   youtubeUrl: string
 }
 
-export default function BackgroundMusic({ youtubeUrl }: Props) {
+export interface MusicHandle {
+  unmute: () => void
+}
+
+const BackgroundMusic = forwardRef<MusicHandle, Props>(({ youtubeUrl }, ref) => {
   const [isPlaying, setIsPlaying] = useState(false)
   const [hasUnmuted, setHasUnmuted] = useState(false)
   const [currentTrack, setCurrentTrack] = useState(0)
@@ -38,24 +42,36 @@ export default function BackgroundMusic({ youtubeUrl }: Props) {
     return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3&modestbranding=1&rel=0&playsinline=1`
   }
 
-  // Load first video on mount
+  function unmuteAndRestart() {
+    postMessage('seekTo', 0)
+    postMessage('unMute')
+    postMessage('playVideo')
+    setIsPlaying(true)
+    isPlayingRef.current = true
+  }
+
+  useImperativeHandle(ref, () => ({
+    unmute() {
+      if (hasUnmutedRef.current) return
+      hasUnmutedRef.current = true
+      setHasUnmuted(true)
+      unmuteAndRestart()
+    },
+  }), [])
+
+  // Load first video on mount (starts muted)
   useEffect(() => {
     if (videoIds.length === 0 || !iframeRef.current) return
     iframeRef.current.src = getSrc(videoIds[0])
-    setIsPlaying(true)
-    isPlayingRef.current = true
   }, [videoIds.length])
 
-  // Click anywhere to unmute
+  // Click anywhere to unmute and restart from beginning
   useEffect(() => {
     function handleClick() {
       if (hasUnmutedRef.current) return
       hasUnmutedRef.current = true
       setHasUnmuted(true)
-      postMessage('unMute')
-      postMessage('playVideo')
-      setIsPlaying(true)
-      isPlayingRef.current = true
+      unmuteAndRestart()
     }
 
     document.addEventListener('click', handleClick)
@@ -66,10 +82,7 @@ export default function BackgroundMusic({ youtubeUrl }: Props) {
     if (!hasUnmutedRef.current) {
       hasUnmutedRef.current = true
       setHasUnmuted(true)
-      postMessage('unMute')
-      postMessage('playVideo')
-      setIsPlaying(true)
-      isPlayingRef.current = true
+      unmuteAndRestart()
       return
     }
     if (isPlayingRef.current) {
@@ -151,4 +164,7 @@ export default function BackgroundMusic({ youtubeUrl }: Props) {
       />
     </div>
   )
-}
+})
+
+BackgroundMusic.displayName = 'BackgroundMusic'
+export default BackgroundMusic

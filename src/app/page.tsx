@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import PasswordGate from '@/components/PasswordGate'
 import HeroSection from '@/components/HeroSection'
@@ -9,9 +9,8 @@ import Highlights from '@/components/Highlights'
 import Gallery from '@/components/Gallery'
 import Footer from '@/components/Footer'
 import BackgroundMusic from '@/components/BackgroundMusic'
-import { LogOut } from 'lucide-react'
-
-const YOUTUBE_MUSIC_URL = ''
+import type { MusicHandle } from '@/components/BackgroundMusic'
+import { LogOut, ArrowUp } from 'lucide-react'
 
 interface Settings {
   hero_label?: string
@@ -41,6 +40,9 @@ export default function Home() {
   const [heroUrl, setHeroUrl] = useState('')
   const [loading, setLoading] = useState(true)
   const [settings, setSettings] = useState<Settings>(DEFAULTS)
+  const [showScrollTop, setShowScrollTop] = useState(false)
+  const musicRef = useRef<MusicHandle>(null)
+  const galleryRef = useRef<HTMLDivElement>(null)
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -48,6 +50,15 @@ export default function Home() {
     setFotos([])
     setHeroUrl('')
     setLoading(true)
+  }
+
+  function handleEnterGallery() {
+    musicRef.current?.unmute()
+    galleryRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   useEffect(() => {
@@ -93,6 +104,14 @@ export default function Home() {
     load()
   }, [unlocked])
 
+  useEffect(() => {
+    function onScroll() {
+      setShowScrollTop(window.scrollY > window.innerHeight * 0.5)
+    }
+    window.addEventListener('scroll', onScroll)
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
   return (
     <>
       <AnimatePresence>
@@ -110,8 +129,19 @@ export default function Home() {
           >
             <LogOut className="w-5 h-5" />
           </button>
+
+          {showScrollTop && (
+            <button
+              onClick={scrollToTop}
+              className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-dark/80 backdrop-blur-sm text-white flex items-center justify-center shadow-lg hover:bg-dark transition-colors"
+              aria-label="Voltar ao topo"
+            >
+              <ArrowUp className="w-5 h-5" />
+            </button>
+          )}
+
           <main>
-               {settings.background_music_url && <BackgroundMusic youtubeUrl={settings.background_music_url!} />}
+            {settings.background_music_url && <BackgroundMusic ref={musicRef} youtubeUrl={settings.background_music_url!} />}
             {loading ? (
               <div className="h-screen flex items-center justify-center bg-cream">
                 <div className="text-center">
@@ -123,10 +153,12 @@ export default function Home() {
               </div>
             ) : (
               <>
-                {heroUrl && <HeroSection heroUrl={heroUrl} label={settings.hero_label!} title={settings.hero_title!} subtitle={settings.hero_subtitle!} />}
+                {heroUrl && <HeroSection heroUrl={heroUrl} label={settings.hero_label!} title={settings.hero_title!} subtitle={settings.hero_subtitle!} onEnterGallery={handleEnterGallery} />}
                 <WelcomeMessage message={settings.welcome_message!} />
                 <Highlights fotos={fotos} />
-                <Gallery fotos={fotos} />
+                <div ref={galleryRef}>
+                  <Gallery fotos={fotos} />
+                </div>
                 <Footer title={settings.footer_title!} subtitle={settings.footer_subtitle!} />
               </>
             )}
