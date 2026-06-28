@@ -1,6 +1,6 @@
 # Álbum Gestante — Karine & Alan
 
-## Estado atual do projeto (28/06/2026 — em produção)
+## Estado atual do projeto (28/06/2026 — ✅ 100% finalizado)
 
 ### Stack
 - **Framework**: Next.js 14 + React + TypeScript
@@ -17,7 +17,7 @@ album-gestante/
 │   ├── app/
 │   │   ├── globals.css
 │   │   ├── layout.tsx
-│   │   ├── page.tsx                      # Página pública do álbum
+│   │   ├── page.tsx                      # Página pública do álbum (carregamento em 2 fases: hero primeiro, galeria depois)
 │   │   ├── api/
 │   │   │   ├── auth/
 │   │   │   │   ├── route.ts              # Login do álbum (senha do álbum)
@@ -28,17 +28,20 @@ album-gestante/
 │   │   │   │   │   ├── route.ts          # Login admin (senha admin)
 │   │   │   │   │   └── logout/route.ts   # Logout do admin
 │   │   │   │   ├── fotos/route.ts        # CRUD fotos (upload/compress/delete/reorder)
+│   │   │   │   ├── musicas/route.ts      # Upload MP3 para Supabase Storage
 │   │   │   │   └── settings/route.ts     # CRUD settings (protegido por admin)
-│   │   │   ├── fotos/route.ts            # Lista fotos + signed URLs (protegido por álbum)
+│   │   │   ├── fotos/
+│   │   │   │   ├── route.ts              # Lista fotos + signed URLs WebP thumbs + JPEG full
+│   │   │   │   └── hero/route.ts         # Apenas a primeira foto (hero) — carregamento rápido
 │   │   │   └── settings/route.ts         # Lê settings públicos (protegido por sessão álbum)
 │   │   ├── admin/page.tsx                # Painel admin completo
 │   │   ├── components/
-│   │   │   ├── BackgroundMusic.tsx       # Player YouTube com iframe + escuta onReady/onStateChange via window.message (só carrega no 1º clique)
+│   │   │   ├── BackgroundMusic.tsx       # Player de áudio nativo <audio> com MP3 do Supabase (playlist, auto-advance)
 │   │   │   ├── PasswordGate.tsx          # Tela de senha do álbum (com botão logout)
 │   │   │   ├── HeroSection.tsx           # Hero com foto + botão "Entrar na Galeria"
 │   │   │   ├── WelcomeMessage.tsx        # Mensagem de boas-vindas
-│   │   │   ├── Highlights.tsx            # Slideshow de destaques
-│   │   │   ├── Gallery.tsx               # Grid responsivo + infinite scroll
+│   │   │   ├── Highlights.tsx            # Slideshow de destaques (qualidade cheia)
+│   │   │   ├── Gallery.tsx               # Grid responsivo + infinite scroll (48 por página, thumbs WebP)
 │   │   │   ├── PhotoModal.tsx            # Modal com swipe, download, zoom (PC: scroll/clique)
 │   │   │   └── Footer.tsx                # Footer com título/subtítulo configuráveis
 │   │   └── lib/
@@ -68,19 +71,22 @@ album-gestante/
 | Controle total de conteúdo via admin | ✅ Implementado |
 | Sessão persiste ao recarregar | ✅ Implementado |
 | Otimizações mobile (swipe, touch-action, object-contain) | ✅ Implementado |
-| Player de música (YouTube) com playlist | ✅ iframe + escuta onReady/onStateChange via window.message, só carrega no 1º clique |
+| Player de música nativo com MP3 | ✅ `<audio>` com playlist e auto-advance |
+| Upload de MP3 via admin | ✅ Envia para Supabase Storage e gera signed URL |
 | Botão "Tornar Hero" no admin | ✅ Implementado |
 | Logout em ambas as telas | ✅ Implementado |
 | Admin responsivo (mobile otimizado) | ✅ Implementado |
 | Filtro de valores vazios nas settings | ✅ Valores vazios não sobrescrevem padrões |
-| Corrigido áudio no iPhone (Safari/Chrome) | ✅ Aguarda evento onReady do YouTube via window.message antes de enviar playVideo |
+| Áudio funcionando 100% no iPhone | ✅ `<audio>` nativo — funciona no Safari e Chrome |
 | Ícone do speaker corrigido | ✅ VolumeX mudo / Volume2 tocando |
 | Botão "Entrar na Galeria" no Hero | ✅ Scroll suave + ativa música |
 | Voltar ao topo (↑) | ✅ Botão flutuante ao descer a página |
 | Transição "Mamãe do Vítor" | ❌ Removida |
-| Galeria uniforme (PC e mobile) | ✅ PhotoModal nos dois, sem zoom overlay separado |
+| Galeria uniforme (PC e mobile) | ✅ Thumbs WebP 400px no grid, JPEG cheio no modal |
 | Zoom no PhotoModal (PC) | ✅ Clique cicla 1x→2x→3x→1x, scroll do mouse |
-| API de fotos otimizada | ✅ createSignedUrls em lote (em vez de 1 por foto) |
+| API de fotos otimizada | ✅ Hero carrega primeiro, thumbs WebP + batch signed URLs |
+| Galeria com 48 fotos por página | ✅ Infinite scroll mais rápido |
+| Carregamento em 2 fases | ✅ Hero + texto aparecem antes da galeria |
 
 ### Configurações
 
@@ -89,7 +95,7 @@ album-gestante/
 | **Senha do álbum** | `karinegestante2026` |
 | **Senha do admin** | `karine2026` |
 | **Supabase Project** | `hofulrzzndybzoliyvmx.supabase.co` |
-| **Bucket** | `fotos_gestante` (privado, signed URLs 1h) |
+| **Bucket** | `fotos_gestante` (privado, signed URLs 1h, pasta `musicas/` para MP3) |
 | **GitHub** | `https://github.com/Alansrcosta2/album-gestante` (público) |
 | **Vercel Production URL** | `https://album-gestante.vercel.app` |
 | **Tabela `settings`** | Chaves: `hero_label`, `hero_title`, `hero_subtitle`, `welcome_message`, `footer_title`, `footer_subtitle`, `background_music_url` |
@@ -101,53 +107,53 @@ album-gestante/
 | **Álbum (público)** | https://album-gestante.vercel.app | `karinegestante2026` |
 | **Admin** | https://album-gestante.vercel.app/admin | `karine2026` |
 
-### ✅ Projeto finalizado
+### ✅ Projeto finalizado — 100%
 
 - **Deployment Protection**: Desabilitado na Vercel
-- **Músicas**: Configuradas via admin
+- **Músicas**: MP3 hospedados no Supabase Storage, gerenciados via admin
 - **Textos**: Ajustados (Hero, Welcome, Footer)
-- **Foto do Hero**: Definida via admin
-- **Galeria**: PhotoModal uniforme (PC e mobile) com zoom no PC
-- **Áudio iPhone**: Corrigido (escuta onReady do YouTube via window.message, sem YT.Player)
-- **Transição**: Removida — botão "Entrar na Galeria" faz scroll direto sem overlay
+- **Foto do Hero**: Definida via admin (⭐ no card da foto)
+- **Galeria**: Thumbs WebP (400px) no grid, JPEG cheio no modal/zoom
+- **Áudio iPhone**: ✅ **100% funcional** com `<audio>` nativo (sem YouTube)
+- **Transição**: Removida — scroll direto para galeria
+- **Carregamento**: Hero aparece imediatamente, galeria carrega em segundo plano
 
 ### Funcionalidades do Admin
 
 - **Upload de fotos**: clique ou arraste, compressão automática (JPEG 2000px, 85%)
+- **Upload de músicas**: botão "Adicionar MP3" — envia para Supabase Storage
 - **Edição inline**: título e ordem diretamente na lista
 - **Tornar Hero**: ícone de estrela (⭐) nos cards das fotos — clica para definir como foto principal do Hero
-- **Exclusão**: botão de lixeira com confirmação
-- **Configurações**: todos os textos editáveis + música de fundo com gerenciamento profissional (adicionar/remover URLs individualmente)
-- **Gerenciamento de músicas**: lista visual com botão + para adicionar, X para remover, e setas ▲/▼ para reordenar
+- **Exclusão de fotos**: botão de lixeira com confirmação
+- **Configurações**: todos os textos editáveis
+- **Gerenciamento de músicas**: lista visual com botão + para adicionar MP3, X para remover, e setas ▲/▼ para reordenar
 - **Logout**: botão no header (desktop) ou X (mobile)
 
 ### Funcionalidades do Álbum
 
 - **Tela de senha** com botão de logout (X no canto superior direito)
-- **Hero** com a primeira foto da galeria (ordem=1) — clique na ⭐ no admin para alterar
-- **Highlights**: slideshow automático das primeiras 18 fotos
-- **Galeria completa**: grid responsivo com lazy loading e infinite scroll (24 por página)
+- **Hero** com a primeira foto (ordem=1) — clique na ⭐ no admin para alterar
+- **Highlights**: slideshow automático das primeiras 18 fotos (qualidade cheia)
+- **Galeria completa**: grid responsivo com lazy loading, thumbs WebP, infinite scroll (48 por página)
 - **Zoom na galeria**: 
   - **PC**: passe o mouse sobre a foto e rode o scroll do mouse para dar zoom
   - **Mobile**: pinch-to-zoom (pinça com dois dedos)
   - Clique em X para sair do zoom
 - **Modal de foto**: swipe, download, navegação por teclado (← → Esc)
 - **Player de música**: 
-  - Toca automaticamente ao abrir o álbum (mudo)
-  - Clique em qualquer lugar da tela ativa o som
+  - Toca automaticamente ao abrir o álbum
+  - Clique em "Entrar na Galeria" ativa o som
   - Botões play/pause, skip anterior/próximo, contador de faixa
+  - Auto-advance para a próxima música
 - **Footer** configurável
 
-### Comportamento da Música
+### Comportamento da Música (MP3 nativo)
 
-1. **Ao abrir o álbum**: iframe do YouTube fica vazio (só carrega no primeiro clique)
-2. **No primeiro clique** (botão "Entrar na Galeria" ou qualquer lugar): iframe carrega com `mute=1, autoplay=1`
-3. **Quando o YouTube dispara o evento `onReady`** (via `window.message`): envia `postMessage('seekTo',0)`, `postMessage('unMute')`, `postMessage('playVideo')`
-4. **A partir daí**, player funciona normalmente (play/pause/skip)
-5. **Auto-advance**: quando o YouTube dispara `onStateChange` com `info=0` (vídeo terminou), avança automaticamente para a próxima música
-6. **No iPhone**: o clique do usuário permite ativar o áudio. O `onReady` do YouTube garante que os comandos só são enviados quando o player está pronto.
-
-> **Nota**: No iPhone, o áudio só ativa com interação do usuário. O código aguarda o evento `onReady` do YouTube (em vez do `load` do iframe) para enviar os comandos, evitando que sejam perdidos.
+1. **Ao abrir o álbum**: `<audio>` pré-carrega a primeira música
+2. **No primeiro clique**: `audio.play()` inicia a reprodução
+3. **A partir daí**: play/pause/skip funcionam normalmente
+4. **Auto-advance**: evento `ended` do `<audio>` avança para a próxima
+5. **No iPhone**: funciona 100% no Safari e Chrome (não depende de iframe YouTube)
 
 ### Variáveis de ambiente (já configuradas na Vercel)
 
@@ -163,14 +169,15 @@ album-gestante/
 
 - **Repo público** no GitHub (necessário para deploy grátis na Vercel Hobby)
 - **Bucket privado** no Supabase — acesso só via signed URLs (expiram em 1h)
-- **API de fotos** usa `createSignedUrls` (lote) em vez de chamadas individuais
-- **Service Role Key** usada apenas no server-side (API routes admin + `/api/fotos`)
+- **API de fotos** retorna `url` (JPEG cheio) e `thumb` (WebP 400px) para cada foto
+- **API de fotos/hero** retorna apenas a primeira foto (carregamento instantâneo do Hero)
+- **Service Role Key** usada apenas no server-side
 - **Sessão do álbum**: cookie HTTP-only `album_session` (24h)
 - **Admin**: cookie HTTP-only `admin_session` (24h), separado da sessão do álbum
 - **Foto do Hero**: clique na ⭐ no admin para definir qualquer foto como Hero instantaneamente
-- **Música**: iframe só carrega no primeiro clique. Usa `postMessage` para controle (unMute, seekTo, playVideo, pauseVideo). Requer `enablejsapi=1` no embed.
-- **Galeria**: PhotoModal funciona igual no PC e mobile. No PC, clique na foto cicla zoom (1x→2x→3x→1x) e scroll do mouse também funciona. Duplo clique reseta.
-- **Transição "Entrar na Galeria"**: overlay creme com "Mamãe do Vítor" pulsando (2.5s), ativa a música e faz scroll suave até a galeria.
-- **Voltar ao topo**: botão (↑) aparece no canto inferior direito ao descer a página.
-- **Logout**: disponível tanto no álbum (X no canto superior direito) quanto no admin (botão LogOut no header).
-- **Valores vazios**: campos de settings vazios não sobrescrevem os textos padrão.
+- **Música**: `<audio>` nativo com MP3 hospedados no Supabase Storage (pasta `musicas/`). Upload via admin.
+- **Galeria**: 48 fotos por página, thumbs WebP (400px) para carregamento rápido
+- **Carregamento em 2 fases**: Hero + texto aparecem primeiro, galeria carrega em segundo plano
+- **Voltar ao topo**: botão (↑) aparece no canto inferior direito ao descer a página
+- **Logout**: disponível tanto no álbum (X no canto superior direito) quanto no admin (botão LogOut no header)
+- **Valores vazios**: campos de settings vazios não sobrescrevem os textos padrão
