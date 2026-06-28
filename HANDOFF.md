@@ -17,7 +17,7 @@ album-gestante/
 │   ├── app/
 │   │   ├── globals.css
 │   │   ├── layout.tsx
-│   │   ├── page.tsx                      # Página pública do álbum (transição "Mamãe do Vítor")
+│   │   ├── page.tsx                      # Página pública do álbum
 │   │   ├── api/
 │   │   │   ├── auth/
 │   │   │   │   ├── route.ts              # Login do álbum (senha do álbum)
@@ -33,7 +33,7 @@ album-gestante/
 │   │   │   └── settings/route.ts         # Lê settings públicos (protegido por sessão álbum)
 │   │   ├── admin/page.tsx                # Painel admin completo
 │   │   ├── components/
-│   │   │   ├── BackgroundMusic.tsx       # Player YouTube com iframe + postMessage (só carrega no 1º clique)
+│   │   │   ├── BackgroundMusic.tsx       # Player YouTube com iframe + escuta onReady/onStateChange via window.message (só carrega no 1º clique)
 │   │   │   ├── PasswordGate.tsx          # Tela de senha do álbum (com botão logout)
 │   │   │   ├── HeroSection.tsx           # Hero com foto + botão "Entrar na Galeria"
 │   │   │   ├── WelcomeMessage.tsx        # Mensagem de boas-vindas
@@ -68,16 +68,16 @@ album-gestante/
 | Controle total de conteúdo via admin | ✅ Implementado |
 | Sessão persiste ao recarregar | ✅ Implementado |
 | Otimizações mobile (swipe, touch-action, object-contain) | ✅ Implementado |
-| Player de música (YouTube) com playlist | ✅ iframe + postMessage, só carrega no 1º clique |
+| Player de música (YouTube) com playlist | ✅ iframe + escuta onReady/onStateChange via window.message, só carrega no 1º clique |
 | Botão "Tornar Hero" no admin | ✅ Implementado |
 | Logout em ambas as telas | ✅ Implementado |
 | Admin responsivo (mobile otimizado) | ✅ Implementado |
 | Filtro de valores vazios nas settings | ✅ Valores vazios não sobrescrevem padrões |
-| Corrigido áudio no iPhone (Safari/Chrome) | ✅ postMessage unMute + iframe com enablejsapi |
+| Corrigido áudio no iPhone (Safari/Chrome) | ✅ Aguarda evento onReady do YouTube via window.message antes de enviar playVideo |
 | Ícone do speaker corrigido | ✅ VolumeX mudo / Volume2 tocando |
 | Botão "Entrar na Galeria" no Hero | ✅ Scroll suave + ativa música |
 | Voltar ao topo (↑) | ✅ Botão flutuante ao descer a página |
-| Transição "Mamãe do Vítor" | ✅ Fade creme com texto pulsando (2.5s) |
+| Transição "Mamãe do Vítor" | ❌ Removida |
 | Galeria uniforme (PC e mobile) | ✅ PhotoModal nos dois, sem zoom overlay separado |
 | Zoom no PhotoModal (PC) | ✅ Clique cicla 1x→2x→3x→1x, scroll do mouse |
 | API de fotos otimizada | ✅ createSignedUrls em lote (em vez de 1 por foto) |
@@ -108,8 +108,8 @@ album-gestante/
 - **Textos**: Ajustados (Hero, Welcome, Footer)
 - **Foto do Hero**: Definida via admin
 - **Galeria**: PhotoModal uniforme (PC e mobile) com zoom no PC
-- **Áudio iPhone**: Corrigido (iframe + postMessage + enablejsapi)
-- **Transição**: "Mamãe do Vítor" pulsando ao entrar na galeria
+- **Áudio iPhone**: Corrigido (escuta onReady do YouTube via window.message, sem YT.Player)
+- **Transição**: Removida — botão "Entrar na Galeria" faz scroll direto sem overlay
 
 ### Funcionalidades do Admin
 
@@ -141,11 +141,13 @@ album-gestante/
 ### Comportamento da Música
 
 1. **Ao abrir o álbum**: iframe do YouTube fica vazio (só carrega no primeiro clique)
-2. **No primeiro clique** (botão "Entrar na Galeria" ou qualquer lugar): iframe carrega com `mute=1, autoplay=1`, envia `postMessage('seekTo',0)`, `postMessage('unMute')`, `postMessage('playVideo')`
-3. **A partir daí**, player funciona normalmente (play/pause/skip)
-4. **No iPhone**: o clique do usuário permite ativar o áudio via postMessage
+2. **No primeiro clique** (botão "Entrar na Galeria" ou qualquer lugar): iframe carrega com `mute=1, autoplay=1`
+3. **Quando o YouTube dispara o evento `onReady`** (via `window.message`): envia `postMessage('seekTo',0)`, `postMessage('unMute')`, `postMessage('playVideo')`
+4. **A partir daí**, player funciona normalmente (play/pause/skip)
+5. **Auto-advance**: quando o YouTube dispara `onStateChange` com `info=0` (vídeo terminou), avança automaticamente para a próxima música
+6. **No iPhone**: o clique do usuário permite ativar o áudio. O `onReady` do YouTube garante que os comandos só são enviados quando o player está pronto.
 
-> **Nota**: No iPhone, o áudio só ativa com interação do usuário. O `postMessage('unMute')` dentro do evento de clique resolve isso.
+> **Nota**: No iPhone, o áudio só ativa com interação do usuário. O código aguarda o evento `onReady` do YouTube (em vez do `load` do iframe) para enviar os comandos, evitando que sejam perdidos.
 
 ### Variáveis de ambiente (já configuradas na Vercel)
 
