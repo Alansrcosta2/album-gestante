@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 import PasswordGate from '@/components/PasswordGate'
 import HeroSection from '@/components/HeroSection'
 import WelcomeMessage from '@/components/WelcomeMessage'
@@ -41,7 +41,6 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [settings, setSettings] = useState<Settings>(DEFAULTS)
   const [showScrollTop, setShowScrollTop] = useState(false)
-  const [transitionStage, setTransitionStage] = useState<'idle' | 'transitioning'>('idle')
   const musicRef = useRef<MusicHandle>(null)
   const galleryRef = useRef<HTMLDivElement>(null)
 
@@ -55,11 +54,7 @@ export default function Home() {
 
   function handleEnterGallery() {
     musicRef.current?.unmute()
-    setTransitionStage('transitioning')
-    setTimeout(() => {
-      galleryRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, 400)
-    setTimeout(() => setTransitionStage('idle'), 2300)
+    galleryRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
   function scrollToTop() {
@@ -169,35 +164,7 @@ export default function Home() {
             )}
           </main>
 
-          <AnimatePresence>
-            {transitionStage === 'transitioning' && (
-              <motion.div
-                key="page-transition"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="fixed inset-0 z-50 bg-cream flex items-center justify-center"
-              >
-                <motion.p
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                    scale: [1, 1.08, 1, 1.08, 1, 1, 1],
-                  }}
-                  transition={{
-                    opacity: { delay: 0.15, duration: 0.35 },
-                    y: { delay: 0.15, duration: 0.35 },
-                    scale: { delay: 0.5, duration: 1.2, ease: 'easeInOut' },
-                  }}
-                  className="font-serif text-3xl md:text-5xl text-dark drop-shadow-sm"
-                >
-                  Mamãe do Vítor
-                </motion.p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+
         </>
       )}
     </>
