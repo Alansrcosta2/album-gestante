@@ -164,7 +164,7 @@ const BackgroundMusic = forwardRef<MusicHandle, Props>(({ youtubeUrl }, ref) => 
         </div>
       )}
 
-      <audio ref={audioRef} preload="auto" />
+      <audio ref={audioRef} preload="auto" src={urls[0] || ''} />
     </div>
   )
 })
