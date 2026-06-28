@@ -28,6 +28,13 @@ function post(iframe: HTMLIFrameElement | null, func: string, args?: any) {
   )
 }
 
+function sendPlay(iframe: HTMLIFrameElement | null) {
+  if (!iframe) return
+  post(iframe, 'seekTo', 0)
+  post(iframe, 'unMute')
+  post(iframe, 'playVideo')
+}
+
 const BackgroundMusic = forwardRef<MusicHandle, Props>(({ youtubeUrl }, ref) => {
   const [isPlaying, setIsPlaying] = useState(false)
   const [hasUnmuted, setHasUnmuted] = useState(false)
@@ -36,7 +43,7 @@ const BackgroundMusic = forwardRef<MusicHandle, Props>(({ youtubeUrl }, ref) => 
   const unmutedRef = useRef(false)
   const playingRef = useRef(false)
   const trackRef = useRef(0)
-  const loadingRef = useRef(false)
+  const readyRef = useRef(false)
 
   const urls = youtubeUrl.split(/[\n,;]+/).map((s) => s.trim()).filter(Boolean)
   const videoIds = urls.map(extractVideoId).filter((id): id is string => id !== null)
@@ -47,17 +54,12 @@ const BackgroundMusic = forwardRef<MusicHandle, Props>(({ youtubeUrl }, ref) => 
   idsRef.current = videoIds
   playListRef.current = hasPlaylist
 
-  function playAfterLoad() {
+  function playNow() {
     const el = iframeRef.current
-    if (!el || !unmutedRef.current) return
-    loadingRef.current = false
-    setTimeout(() => {
-      post(el, 'seekTo', 0)
-      post(el, 'unMute')
-      post(el, 'playVideo')
-      setIsPlaying(true)
-      playingRef.current = true
-    }, 800)
+    if (!el) return
+    sendPlay(el)
+    setIsPlaying(true)
+    playingRef.current = true
   }
 
   function startVideo(index: number) {
@@ -65,7 +67,7 @@ const BackgroundMusic = forwardRef<MusicHandle, Props>(({ youtubeUrl }, ref) => 
     setCurrentTrack(index)
     const el = iframeRef.current
     if (!el) return
-    loadingRef.current = true
+    readyRef.current = false
     el.src = videoSrc(idsRef.current[index])
   }
 
@@ -86,21 +88,16 @@ const BackgroundMusic = forwardRef<MusicHandle, Props>(({ youtubeUrl }, ref) => 
     return () => document.removeEventListener('click', onClick)
   }, [])
 
-  useEffect(() => {
-    const el = iframeRef.current
-    if (!el) return
-    function onLoad() {
-      if (loadingRef.current) playAfterLoad()
-    }
-    el.addEventListener('load', onLoad)
-    return () => el.removeEventListener('load', onLoad)
-  }, [])
-
+  // Listen for YouTube events (onReady, onStateChange)
   useEffect(() => {
     function onMessage(event: MessageEvent) {
       if (event.origin !== 'https://www.youtube.com') return
       try {
         const data = JSON.parse(event.data)
+        if (data.event === 'onReady') {
+          readyRef.current = true
+          if (unmutedRef.current) playNow()
+        }
         if (data.event === 'onStateChange' && data.info === 0 && playListRef.current) {
           startVideo((trackRef.current + 1) % idsRef.current.length)
         }
@@ -108,6 +105,31 @@ const BackgroundMusic = forwardRef<MusicHandle, Props>(({ youtubeUrl }, ref) => 
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
+  }, [])
+
+  // When iframe loads, poll for ready state and fallback after 10s
+  useEffect(() => {
+    const el = iframeRef.current
+    if (!el) return
+    function onLoad() {
+      if (!unmutedRef.current) return
+      let attempts = 0
+      const poll = setInterval(() => {
+        attempts++
+        if (attempts > 20) {
+          clearInterval(poll)
+          // Fallback: try anyway
+          if (unmutedRef.current) playNow()
+          return
+        }
+        if (readyRef.current) {
+          clearInterval(poll)
+          // onReady already handled playback
+        }
+      }, 500)
+    }
+    el.addEventListener('load', onLoad)
+    return () => el.removeEventListener('load', onLoad)
   }, [])
 
   function toggle() {
@@ -172,7 +194,7 @@ const BackgroundMusic = forwardRef<MusicHandle, Props>(({ youtubeUrl }, ref) => 
 
       <iframe
         ref={iframeRef}
-        className="fixed bottom-0 left-0 w-px h-px opacity-0 pointer-events-none"
+        className="absolute -left-[9999px] -top-[9999px] w-px h-px"
         allow="autoplay; encrypted-media"
         allowFullScreen
         title="bg-music"
