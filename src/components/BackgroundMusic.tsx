@@ -11,151 +11,123 @@ export interface MusicHandle {
   unmute: () => void
 }
 
-function extractVideoId(url: string): string | null {
-  if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url
-  const m = url.match(/(?:youtube\.com\/(?:watch\?.*v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/)
-  return m ? m[1] : null
-}
-
-function videoSrc(videoId: string) {
-  return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3&modestbranding=1&rel=0&playsinline=1`
-}
-
-function post(iframe: HTMLIFrameElement | null, func: string, args?: any) {
-  iframe?.contentWindow?.postMessage(
-    JSON.stringify({ event: 'command', func, args }),
-    'https://www.youtube.com'
-  )
-}
-
-function sendPlay(iframe: HTMLIFrameElement | null) {
-  if (!iframe) return
-  post(iframe, 'seekTo', 0)
-  post(iframe, 'unMute')
-  post(iframe, 'playVideo')
-}
-
 const BackgroundMusic = forwardRef<MusicHandle, Props>(({ youtubeUrl }, ref) => {
   const [isPlaying, setIsPlaying] = useState(false)
   const [hasUnmuted, setHasUnmuted] = useState(false)
   const [currentTrack, setCurrentTrack] = useState(0)
-  const iframeRef = useRef<HTMLIFrameElement>(null)
+  const audioRef = useRef<HTMLAudioElement>(null)
   const unmutedRef = useRef(false)
   const playingRef = useRef(false)
   const trackRef = useRef(0)
-  const readyRef = useRef(false)
 
   const urls = youtubeUrl.split(/[\n,;]+/).map((s) => s.trim()).filter(Boolean)
-  const videoIds = urls.map(extractVideoId).filter((id): id is string => id !== null)
-  const hasPlaylist = videoIds.length > 1
+  const hasPlaylist = urls.length > 1
+  const count = urls.length
 
-  const idsRef = useRef(videoIds)
-  const playListRef = useRef(hasPlaylist)
-  idsRef.current = videoIds
-  playListRef.current = hasPlaylist
-
-  function playNow() {
-    const el = iframeRef.current
-    if (!el) return
-    sendPlay(el)
-    setIsPlaying(true)
-    playingRef.current = true
-  }
-
-  function startVideo(index: number) {
-    trackRef.current = index
-    setCurrentTrack(index)
-    const el = iframeRef.current
-    if (!el) return
-    readyRef.current = false
-    el.src = videoSrc(idsRef.current[index])
-  }
+  const urlsRef = useRef(urls)
+  urlsRef.current = urls
 
   function unmute() {
     if (unmutedRef.current) return
     unmutedRef.current = true
     setHasUnmuted(true)
-    startVideo(trackRef.current)
+    const audio = audioRef.current
+    if (audio) {
+      if (!audio.src) audio.src = urls[trackRef.current]
+      audio.play().then(() => {
+        setIsPlaying(true)
+        playingRef.current = true
+      }).catch(() => {})
+    }
   }
 
   useImperativeHandle(ref, () => ({ unmute }), [])
 
   useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+
     function onClick() {
       if (!unmutedRef.current) unmute()
     }
     document.addEventListener('click', onClick)
-    return () => document.removeEventListener('click', onClick)
-  }, [])
 
-  // Listen for YouTube events (onReady, onStateChange)
-  useEffect(() => {
-    function onMessage(event: MessageEvent) {
-      if (event.origin !== 'https://www.youtube.com') return
-      try {
-        const data = JSON.parse(event.data)
-        if (data.event === 'onReady') {
-          readyRef.current = true
-          if (unmutedRef.current) playNow()
-        }
-        if (data.event === 'onStateChange' && data.info === 0 && playListRef.current) {
-          startVideo((trackRef.current + 1) % idsRef.current.length)
-        }
-      } catch {}
+    function onEnded() {
+      const el = audioRef.current
+      if (!el) return
+      const next = trackRef.current + 1
+      if (next < urlsRef.current.length) {
+        trackRef.current = next
+        setCurrentTrack(next)
+        el.src = urlsRef.current[next]
+        el.play().then(() => {
+          setIsPlaying(true)
+          playingRef.current = true
+        }).catch(() => {})
+      } else {
+        setIsPlaying(false)
+        playingRef.current = false
+      }
     }
-    window.addEventListener('message', onMessage)
-    return () => window.removeEventListener('message', onMessage)
-  }, [])
+    audio.addEventListener('ended', onEnded)
 
-  // When iframe loads, poll for ready state and fallback after 10s
-  useEffect(() => {
-    const el = iframeRef.current
-    if (!el) return
-    function onLoad() {
-      if (!unmutedRef.current) return
-      let attempts = 0
-      const poll = setInterval(() => {
-        attempts++
-        if (attempts > 20) {
-          clearInterval(poll)
-          // Fallback: try anyway
-          if (unmutedRef.current) playNow()
-          return
-        }
-        if (readyRef.current) {
-          clearInterval(poll)
-          // onReady already handled playback
-        }
-      }, 500)
+    return () => {
+      document.removeEventListener('click', onClick)
+      audio.removeEventListener('ended', onEnded)
     }
-    el.addEventListener('load', onLoad)
-    return () => el.removeEventListener('load', onLoad)
   }, [])
 
   function toggle() {
-    if (!unmutedRef.current) { unmute(); return }
+    const audio = audioRef.current
+    if (!audio) return
+
+    if (!unmutedRef.current) {
+      unmute()
+      return
+    }
+
     if (playingRef.current) {
-      post(iframeRef.current, 'pauseVideo')
+      audio.pause()
       setIsPlaying(false)
       playingRef.current = false
     } else {
-      post(iframeRef.current, 'playVideo')
-      setIsPlaying(true)
-      playingRef.current = true
+      if (!audio.src) {
+        audio.src = urls[trackRef.current]
+      }
+      audio.play().then(() => {
+        setIsPlaying(true)
+        playingRef.current = true
+      }).catch(() => {})
+    }
+  }
+
+  function loadTrack(index: number) {
+    const audio = audioRef.current
+    if (!audio) return
+    trackRef.current = index
+    setCurrentTrack(index)
+    audio.src = urls[index]
+    if (unmutedRef.current) {
+      audio.play().then(() => {
+        setIsPlaying(true)
+        playingRef.current = true
+      }).catch(() => {})
     }
   }
 
   function nextTrack() {
-    if (!hasPlaylist) return
-    startVideo((trackRef.current + 1) % videoIds.length)
+    if (trackRef.current < count - 1) {
+      loadTrack(trackRef.current + 1)
+    }
   }
 
   function prevTrack() {
-    if (!hasPlaylist) return
-    startVideo((trackRef.current - 1 + videoIds.length) % videoIds.length)
+    if (trackRef.current > 0) {
+      loadTrack(trackRef.current - 1)
+    }
   }
 
-  if (videoIds.length === 0) return null
+  if (count === 0) return null
 
   return (
     <div className="fixed bottom-6 left-6 z-40 flex items-center gap-2">
@@ -188,17 +160,11 @@ const BackgroundMusic = forwardRef<MusicHandle, Props>(({ youtubeUrl }, ref) => 
 
       {isPlaying && hasPlaylist && (
         <div className="bg-dark/80 backdrop-blur-sm text-white/70 text-xs font-sans px-2.5 py-1 rounded-full select-none">
-          {currentTrack + 1}/{videoIds.length}
+          {currentTrack + 1}/{count}
         </div>
       )}
 
-      <iframe
-        ref={iframeRef}
-        className="absolute -left-[9999px] -top-[9999px] w-px h-px"
-        allow="autoplay; encrypted-media"
-        allowFullScreen
-        title="bg-music"
-      />
+      <audio ref={audioRef} preload="auto" />
     </div>
   )
 })
