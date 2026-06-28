@@ -74,17 +74,14 @@ export default function Home() {
     if (!unlocked) return
 
     async function load() {
-      const [fotosRes, settingsRes] = await Promise.all([
-        fetch('/api/fotos'),
+      const [heroRes, settingsRes] = await Promise.all([
+        fetch('/api/fotos/hero'),
         fetch('/api/settings'),
       ])
 
-      if (fotosRes.ok) {
-        const { fotos: fotosComUrl } = await fotosRes.json()
-        setFotos(fotosComUrl)
-        if (fotosComUrl.length > 0) {
-          setHeroUrl(fotosComUrl[0].url)
-        }
+      if (heroRes.ok) {
+        const data = await heroRes.json()
+        if (data.url) setHeroUrl(data.url)
       }
 
       if (settingsRes.ok) {
@@ -99,6 +96,12 @@ export default function Home() {
       }
 
       setLoading(false)
+
+      const fotosRes = await fetch('/api/fotos')
+      if (fotosRes.ok) {
+        const { fotos: fotosComUrl } = await fotosRes.json()
+        setFotos(fotosComUrl)
+      }
     }
 
     load()

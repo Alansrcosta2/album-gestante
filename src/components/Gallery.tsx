@@ -8,13 +8,14 @@ import PhotoModal from './PhotoModal'
 interface Foto {
   path: string
   url: string
+  thumb?: string
 }
 
 interface Props {
   fotos: Foto[]
 }
 
-const ITEMS_PER_PAGE = 24
+const ITEMS_PER_PAGE = 48
 
 export default function Gallery({ fotos }: Props) {
   const [displayed, setDisplayed] = useState(ITEMS_PER_PAGE)
@@ -129,7 +130,7 @@ export default function Gallery({ fotos }: Props) {
             }}
           >
             <img
-              src={fotos.find(f => f.path === zoomedId)?.url}
+              src={fotos.find(f => f.path === zoomedId)?.url || fotos.find(f => f.path === zoomedId)?.thumb}
               alt="Zoom"
               className="max-w-[90vw] max-h-[90vh] object-contain select-none"
               style={{
@@ -163,7 +164,7 @@ export default function Gallery({ fotos }: Props) {
               className="group relative aspect-[3/4] rounded-xl overflow-hidden bg-beige/30 focus:outline-none cursor-zoom-in"
             >
               <img
-                src={foto.url}
+                src={foto.thumb || foto.url}
                 alt={`Foto ${i + 1}`}
                 loading="lazy"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"

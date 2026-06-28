@@ -20,20 +20,37 @@ export async function GET() {
   }
 
   const paths = fotos.map((f) => f.storage_path)
-  const { data: signedData } = await supabase.storage
-    .from('fotos_gestante')
-    .createSignedUrls(paths, 3600)
+
+  const [batchResult, thumbResults] = await Promise.all([
+    supabase.storage.from('fotos_gestante').createSignedUrls(paths, 3600),
+    Promise.all(
+      fotos.map((f) =>
+        supabase.storage
+          .from('fotos_gestante')
+          .createSignedUrl(f.storage_path, 3600, {
+            transform: { width: 400, height: 533, resize: 'cover', format: 'webp' as any, quality: 80 },
+          })
+          .then((r) => ({ path: f.storage_path, data: r.data }))
+      )
+    ),
+  ])
 
   const urlMap = new Map<string, string>()
-  if (signedData) {
-    for (const item of signedData) {
+  if (batchResult.data) {
+    for (const item of batchResult.data) {
       if (item.signedUrl && item.path) urlMap.set(item.path, item.signedUrl)
     }
+  }
+
+  const thumbMap = new Map<string, string>()
+  for (const r of thumbResults) {
+    if (r.data?.signedUrl) thumbMap.set(r.path, r.data.signedUrl)
   }
 
   const fotosComUrl = fotos.map((f) => ({
     path: f.storage_path,
     url: urlMap.get(f.storage_path) || '',
+    thumb: thumbMap.get(f.storage_path) || '',
   }))
 
   return NextResponse.json({ fotos: fotosComUrl })
