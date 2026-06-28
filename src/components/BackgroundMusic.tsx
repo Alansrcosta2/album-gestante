@@ -21,7 +21,7 @@ function videoSrc(videoId: string) {
   return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&enablejsapi=1&controls=0&showinfo=0&iv_load_policy=3&modestbranding=1&rel=0&playsinline=1`
 }
 
-function postMessageToIframe(iframe: HTMLIFrameElement | null, func: string, args?: any) {
+function post(iframe: HTMLIFrameElement | null, func: string, args?: any) {
   iframe?.contentWindow?.postMessage(
     JSON.stringify({ event: 'command', func, args }),
     'https://www.youtube.com'
@@ -36,7 +36,7 @@ const BackgroundMusic = forwardRef<MusicHandle, Props>(({ youtubeUrl }, ref) => 
   const unmutedRef = useRef(false)
   const playingRef = useRef(false)
   const trackRef = useRef(0)
-  const readyRef = useRef(false)
+  const loadingRef = useRef(false)
 
   const urls = youtubeUrl.split(/[\n,;]+/).map((s) => s.trim()).filter(Boolean)
   const videoIds = urls.map(extractVideoId).filter((id): id is string => id !== null)
@@ -47,60 +47,33 @@ const BackgroundMusic = forwardRef<MusicHandle, Props>(({ youtubeUrl }, ref) => 
   idsRef.current = videoIds
   playListRef.current = hasPlaylist
 
-  // Listen for YouTube events (onReady, onStateChange)
-  useEffect(() => {
-    function onMessage(event: MessageEvent) {
-      if (event.origin !== 'https://www.youtube.com') return
-      try {
-        const data = JSON.parse(event.data)
-        if (data.event === 'onReady') {
-          readyRef.current = true
-          if (unmutedRef.current && iframeRef.current) {
-            const iframe = iframeRef.current
-            postMessageToIframe(iframe, 'seekTo', 0)
-            postMessageToIframe(iframe, 'unMute')
-            postMessageToIframe(iframe, 'playVideo')
-            setIsPlaying(true)
-            playingRef.current = true
-          }
-        }
-        if (data.event === 'onStateChange') {
-          if (data.info === 0 && playListRef.current) {
-            const next = (trackRef.current + 1) % idsRef.current.length
-            trackRef.current = next
-            setCurrentTrack(next)
-            const iframe = iframeRef.current
-            if (iframe && unmutedRef.current) {
-              iframe.src = videoSrc(idsRef.current[next])
-              readyRef.current = false
-            }
-          }
-        }
-      } catch {}
-    }
-    window.addEventListener('message', onMessage)
-    return () => window.removeEventListener('message', onMessage)
-  }, [])
+  function playAfterLoad() {
+    const el = iframeRef.current
+    if (!el || !unmutedRef.current) return
+    loadingRef.current = false
+    setTimeout(() => {
+      post(el, 'seekTo', 0)
+      post(el, 'unMute')
+      post(el, 'playVideo')
+      setIsPlaying(true)
+      playingRef.current = true
+    }, 800)
+  }
 
-  function loadTrack(index: number) {
+  function startVideo(index: number) {
     trackRef.current = index
     setCurrentTrack(index)
-    const iframe = iframeRef.current
-    if (iframe && unmutedRef.current) {
-      readyRef.current = false
-      iframe.src = videoSrc(videoIds[index])
-    }
+    const el = iframeRef.current
+    if (!el) return
+    loadingRef.current = true
+    el.src = videoSrc(idsRef.current[index])
   }
 
   function unmute() {
     if (unmutedRef.current) return
     unmutedRef.current = true
     setHasUnmuted(true)
-    const iframe = iframeRef.current
-    if (iframe) {
-      readyRef.current = false
-      iframe.src = videoSrc(videoIds[trackRef.current])
-    }
+    startVideo(trackRef.current)
   }
 
   useImperativeHandle(ref, () => ({ unmute }), [])
@@ -113,34 +86,51 @@ const BackgroundMusic = forwardRef<MusicHandle, Props>(({ youtubeUrl }, ref) => 
     return () => document.removeEventListener('click', onClick)
   }, [])
 
+  useEffect(() => {
+    const el = iframeRef.current
+    if (!el) return
+    function onLoad() {
+      if (loadingRef.current) playAfterLoad()
+    }
+    el.addEventListener('load', onLoad)
+    return () => el.removeEventListener('load', onLoad)
+  }, [])
+
+  useEffect(() => {
+    function onMessage(event: MessageEvent) {
+      if (event.origin !== 'https://www.youtube.com') return
+      try {
+        const data = JSON.parse(event.data)
+        if (data.event === 'onStateChange' && data.info === 0 && playListRef.current) {
+          startVideo((trackRef.current + 1) % idsRef.current.length)
+        }
+      } catch {}
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [])
+
   function toggle() {
     if (!unmutedRef.current) { unmute(); return }
     if (playingRef.current) {
-      postMessageToIframe(iframeRef.current, 'pauseVideo')
+      post(iframeRef.current, 'pauseVideo')
       setIsPlaying(false)
       playingRef.current = false
     } else {
-      if (readyRef.current) {
-        postMessageToIframe(iframeRef.current, 'playVideo')
-        setIsPlaying(true)
-        playingRef.current = true
-      } else {
-        const iframe = iframeRef.current
-        if (iframe) {
-          iframe.src = videoSrc(videoIds[trackRef.current])
-        }
-      }
+      post(iframeRef.current, 'playVideo')
+      setIsPlaying(true)
+      playingRef.current = true
     }
   }
 
   function nextTrack() {
     if (!hasPlaylist) return
-    loadTrack((trackRef.current + 1) % videoIds.length)
+    startVideo((trackRef.current + 1) % videoIds.length)
   }
 
   function prevTrack() {
     if (!hasPlaylist) return
-    loadTrack((trackRef.current - 1 + videoIds.length) % videoIds.length)
+    startVideo((trackRef.current - 1 + videoIds.length) % videoIds.length)
   }
 
   if (videoIds.length === 0) return null
@@ -182,7 +172,7 @@ const BackgroundMusic = forwardRef<MusicHandle, Props>(({ youtubeUrl }, ref) => 
 
       <iframe
         ref={iframeRef}
-        className="fixed bottom-0 left-0 w-0 h-0 opacity-0 pointer-events-none"
+        className="fixed bottom-0 left-0 w-px h-px opacity-0 pointer-events-none"
         allow="autoplay; encrypted-media"
         allowFullScreen
         title="bg-music"
